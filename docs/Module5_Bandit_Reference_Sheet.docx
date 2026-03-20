@@ -1,0 +1,258 @@
++-----------------------------------------------------------------------+
+| **MODULE 5 --- BANDIT SAST REFERENCE SHEET**                          |
+|                                                                       |
+| What Bandit finds in *vulnerable_shop.py* --- and what it misses, and |
+| why                                                                   |
+|                                                                       |
+| BBC Academy / JBI Training \| Run: bandit vulnerable_shop.py          |
++-----------------------------------------------------------------------+
+
++--------------------------+-------------------+----------------------+
+| **What Bandit Catches in | **What Bandit     | **The Core Lesson**  |
+| vulnerable_shop.py**     | Misses**          |                      |
++--------------------------+-------------------+----------------------+
+| -   **Flaw 1** (B105)    | -   **Flaw 5**    | SAST is a powerful,  |
+|     --- hardcoded secret |     --- session   | fast, repeatable     |
+|     key                  |     design        | first gate. Running  |
+|                          |     (username vs  | Bandit in CI catches |
+| -   **Flaw 2** (B201)    |     user_id)      | well-known dangerous |
+|     --- debug=True in    |                   | patterns before      |
+|     app.run()            | -   **Flaw 6**    | human review. But it |
+|                          |     --- missing   | cannot reason about  |
+| -   **Flaw 3** (B324)    |                   | design intent.       |
+|     --- MD5 for password |  \@login_required |                      |
+|     hashing              |     decorator     | The three missed     |
+|                          |                   | flaws share a common |
+| -   **Flaw 4** (B608)    | -   **Flaw 7**    | property: **they     |
+|     --- f-string SQL     |     --- IDOR via  | involve correct      |
+|     injection (×2)       |     URL parameter | Python code          |
+|                          |                   | implementing a wrong |
+| -   **Flaw 8** (B605)    | **3 out of 8      | design decision.**   |
+|     --- os.popen()       | flaws missed**    | No static tool can   |
+|     command injection    |                   | know that a route    |
+|                          | *All three are    | should require       |
+| **5 out of 8 flaws       | design flaws      | authentication, or   |
+| detected**               | invisible to      | that a user_id       |
+|                          | static analysis.* | should come from the |
+|                          |                   | session rather than  |
+|                          |                   | the URL.             |
+|                          |                   |                      |
+|                          |                   | This is why threat   |
+|                          |                   | modelling (for Flaws |
+|                          |                   | 6 & 7), secure       |
+|                          |                   | design review, and   |
+|                          |                   | penetration testing  |
+|                          |                   | (for Flaw 5) are     |
+|                          |                   | irreplaceable.       |
+|                          |                   | **SAST is necessary  |
+|                          |                   | but not              |
+|                          |                   | sufficient.**        |
++--------------------------+-------------------+----------------------+
+
+**Findings Bandit DOES Report**
+
++---+----+------------+------+-----------------+------------------------+
+| * | ** | **Rule     | *    | **Code That     | **What This Finding    |
+| * | Ba | Name**     | *Sev | Triggers the    | Means & Where It Stops |
+| F | nd |            | /    | Finding**       | Short**                |
+| l | it |            | Co   |                 |                        |
+| a | ID |            | nf** |                 |                        |
+| w | ** |            |      |                 |                        |
+| * |    |            |      |                 |                        |
+| * |    |            |      |                 |                        |
++===+====+============+======+=================+========================+
+| * | ** | hardc      | **L  | app.secret_key  | Bandit detects string  |
+| * | B1 | oded_passw | OW** | = \"password\"  | literals assigned to   |
+| 1 | 05 | ord_string |      |                 | variables named        |
+| * | ** |            | C    |                 | secret/password/key.   |
+| * |    |            | onf: |                 | LOW severity because   |
+|   |    |            | ME   |                 | Bandit cannot confirm  |
+|   |    |            | DIUM |                 | the string is actually |
+|   |    |            |      |                 | used cryptographically |
+|   |    |            |      |                 | --- but the match is   |
+|   |    |            |      |                 | correct. A CI pipeline |
+|   |    |            |      |                 | configured to fail on  |
+|   |    |            |      |                 | any Bandit finding     |
+|   |    |            |      |                 | would block this.      |
++---+----+------------+------+-----------------+------------------------+
+| * | ** | flask_     | **HI | app.            | Flask-specific rule.   |
+| * | B2 | debug_true | GH** | run(debug=True) | Bandit knows that      |
+| 2 | 01 |            |      |                 | debug=True exposes the |
+| * | ** |            | C    |                 | Werkzeug interactive   |
+| * |    |            | onf: |                 | debugger --- it fires  |
+|   |    |            | HIGH |                 | with HIGH/HIGH when    |
+|   |    |            |      |                 | the literal True is    |
+|   |    |            |      |                 | passed. Will NOT fire  |
+|   |    |            |      |                 | if debug=True is set   |
+|   |    |            |      |                 | via                    |
+|   |    |            |      |                 | a                      |
+|   |    |            |      |                 | pp.config\[\"DEBUG\"\] |
+|   |    |            |      |                 | = True --- a known     |
+|   |    |            |      |                 | gap.                   |
++---+----+------------+------+-----------------+------------------------+
+| * | ** | hashlib    | **   | hashlib.md5(pas | Bandit flags all uses  |
+| * | B3 | --- use of | MEDI | sword.encode()) | of MD5 via hashlib as  |
+| 3 | 24 | MD5        | UM** |                 | potentially insecure.  |
+| * | ** |            |      |                 | Severity is MEDIUM     |
+| * |    |            | C    |                 | rather than HIGH       |
+|   |    |            | onf: |                 | because MD5 has        |
+|   |    |            | HIGH |                 | legitimate             |
+|   |    |            |      |                 | non-security uses      |
+|   |    |            |      |                 | (checksums). Context   |
+|   |    |            |      |                 | --- it is used for     |
+|   |    |            |      |                 | passwords --- is not   |
+|   |    |            |      |                 | assessed by the static |
+|   |    |            |      |                 | tool.                  |
++---+----+------------+------+-----------------+------------------------+
+| * | ** | hardc      | **   | db.ex           | Bandit detects SQL     |
+| * | B6 | oded_sql_e | MEDI | ecute(f\"SELECT | keywords (SELECT,      |
+| 4 | 08 | xpressions | UM** | \* FROM users   | FROM, WHERE) followed  |
+| a | ** |            |      | WHERE           | by string formatting.  |
+| * |    |            | C    | username=\'     | Confidence is MEDIUM,  |
+| * |    |            | onf: | {username}\'\") | not HIGH, because      |
+|   |    |            | ME   |                 | Bandit uses pattern    |
+|   |    |            | DIUM |                 | matching, not          |
+|   |    |            |      |                 | data-flow analysis --- |
+|   |    |            |      |                 | it cannot confirm the  |
+|   |    |            |      |                 | f-string value is      |
+|   |    |            |      |                 | user-controlled.       |
++---+----+------------+------+-----------------+------------------------+
+| * | ** | hardc      | **   | db.ex           | Second instance of the |
+| * | B6 | oded_sql_e | MEDI | ecute(f\"SELECT | same rule --- the      |
+| 4 | 08 | xpressions | UM** | \* FROM         | search route. Bandit   |
+| b | ** |            |      | products WHERE  | reports each           |
+| * |    |            | C    | name LIKE       | occurrence             |
+| * |    |            | onf: | \'%{q}%\'\")    | independently, giving  |
+|   |    |            | ME   |                 | the instructor a       |
+|   |    |            | DIUM |                 | natural opening to     |
+|   |    |            |      |                 | discuss how the same   |
+|   |    |            |      |                 | root cause (untrusted  |
+|   |    |            |      |                 | input in SQL) appears  |
+|   |    |            |      |                 | in multiple places.    |
++---+----+------------+------+-----------------+------------------------+
+| * | ** | start_     | **HI | o               | os.popen() always      |
+| * | B6 | process_wi | GH** | s.popen(f\"ping | invokes a shell,       |
+| 8 | 05 | th_a_shell |      | -c 2 {host}\")  | making shell injection |
+| * | ** |            | C    |                 | possible whenever any  |
+| * |    |            | onf: |                 | part of the command    |
+|   |    |            | HIGH |                 | string is              |
+|   |    |            |      |                 | user-controlled.       |
+|   |    |            |      |                 | HIGH/HIGH is correct   |
+|   |    |            |      |                 | and unambiguous. This  |
+|   |    |            |      |                 | is the strongest       |
+|   |    |            |      |                 | Bandit finding in the  |
+|   |    |            |      |                 | file --- a CI pipeline |
+|   |    |            |      |                 | should block on this   |
+|   |    |            |      |                 | immediately.           |
++---+----+------------+------+-----------------+------------------------+
+
+**Flaws Bandit CANNOT Detect --- and Why**
+
+  -------------------------------------------------------------------------------------------------------
+  **Flaw**   **What the Flaw    **Why Bandit Cannot Catch It**  **Which Gate      **The Lesson for
+             Is**                                               Actually Catches  Delegates**
+                                                                It**              
+  ---------- ------------------ ------------------------------- ----------------- -----------------------
+  **5**      Session stores     Design intent is invisible to   DAST / Pen Test   *This is the most
+             username (mutable) static analysis. Bandit can     --- a tester      important lesson of the
+             instead of user_id read that session\[\"user\"\] = decoding the      exercise: SAST tools
+             (immutable)        row\[\"username\"\] is valid    session cookie    reason about code
+                                Python --- it cannot know that  with flask-unsign syntax and patterns.
+                                \"username\" is mutable or that immediately sees  They cannot reason
+                                storing it instead of an ID is  the username      about whether a design
+                                a security design error. No     stored there and  decision is secure.
+                                pattern exists to match.        tests whether     Human testing is
+                                                                substituting      irreplaceable for this
+                                                                \"admin\" grants  class of flaw.*
+                                                                elevated access.  
+
+  **6**      Route /profile has Bandit cannot know which routes Requirements /    *Absence of a security
+             no authentication  should require authentication   Threat Modelling  control produces no
+             check              --- that knowledge lives in     --- a STRIDE      code for SAST to flag.
+             (@login_required   requirements, not code. From    analysis asking   This reinforces why
+             missing)           Bandit\'s perspective, a route  \"what if an      threat modelling at the
+                                without \@login_required is     unauthenticated   requirements stage ---
+                                syntactically correct Python.   caller requests   before code exists ---
+                                The tool has no policy model of /profile?\"       is the earliest and
+                                \"this endpoint must be         generates the     cheapest gate for
+                                protected.\"                    missing           access control flaws.*
+                                                                requirement       
+                                                                before any code   
+                                                                is written.       
+
+  **7**      IDOR --- user_id   user_id =                       Requirements /    *IDORs are almost never
+             accepted directly  request.args.get(\"user_id\")   Threat Modelling  detectable by SAST
+             from URL query     is a legitimate, common Flask   --- as with Flaw  because the code
+             string             pattern. Bandit cannot          6, a 30-second    pattern (reading an ID
+                                distinguish between a route     threat model      from a URL parameter)
+                                that should accept an arbitrary question (\"can   is identical in secure
+                                user_id parameter and one that  the caller        and insecure
+                                should only ever load the       request another   implementations. The
+                                authenticated user\'s own       user\'s           difference is whether
+                                record. Authorisation logic is  record?\")        the ID is validated
+                                a design concern, not a         surfaces the      against the
+                                syntactic one.                  requirement for   authenticated session
+                                                                server-side       --- a runtime,
+                                                                user_id binding   design-level concern.*
+                                                                before code is    
+                                                                written.          
+  -------------------------------------------------------------------------------------------------------
+
+**Quick Reference --- Running Bandit**
+
++-----------------------------------+-----------------------------------+
+| **Running Bandit against          | **Interpreting the Output**       |
+| vulnerable_shop.py**              |                                   |
++-----------------------------------+-----------------------------------+
+| \# Install                        | -   **Severity:** HIGH / MEDIUM / |
+|                                   |     LOW --- how dangerous if      |
+| pip3 install bandit               |     exploited                     |
+| \--break-system-packages          |                                   |
+|                                   | -   **Confidence:** HIGH / MEDIUM |
+| \# Run against a single file      |     / LOW --- how sure Bandit is  |
+|                                   |     the finding is real (not a    |
+| bandit vulnerable_shop.py         |     false positive)               |
+|                                   |                                   |
+| \# Run with lower noise (medium+  | -   **-ll flag:** suppress LOW    |
+| severity only)                    |     severity findings --- useful  |
+|                                   |     for reducing noise in large   |
+| bandit -ll vulnerable_shop.py     |     codebases                     |
+|                                   |                                   |
+| \# Run recursively over a         | -   **Test IDs:** B-prefixed      |
+| directory                         |     codes (B105, B201\...) are    |
+|                                   |     stable --- safe to use in CI  |
+| bandit -r ./module4_owasp_bingo/  |     allowlists and exception      |
+|                                   |     files                         |
+| \# Output as JSON for CI pipeline |                                   |
+| integration                       | -   **False positives:** Bandit   |
+|                                   |     reports B324 (MD5) even when  |
+| bandit -f json -o                 |     used for checksums, not       |
+| bandit_report.json                |     passwords. Always review      |
+| vulnerable_shop.py                |     context before filing as      |
+|                                   |     false positive                |
+|                                   |                                   |
+|                                   | -   **Exit codes:** exit 0 = no   |
+|                                   |     issues found, exit 1 = issues |
+|                                   |     found. CI pipelines can gate  |
+|                                   |     on exit code to block PRs     |
+|                                   |     with HIGH findings            |
++-----------------------------------+-----------------------------------+
+
++-----------------------------------------------------------------------+
+| **pip-audit --- Checking Dependencies for Known CVEs**                |
+|                                                                       |
+| **Bandit analyses your own code.** pip-audit analyses your            |
+| dependencies. Both tools together cover the two main attack surfaces  |
+| in the OWASP A03 Software Supply Chain category: vulnerabilities you  |
+| wrote, and vulnerabilities you inherited.                             |
+|                                                                       |
+| Install and run against the Module 5 demo file:                       |
+|                                                                       |
+| > pip3 install pip-audit \--break-system-packages                     |
+| >                                                                     |
+| > pip-audit -r requirements_vulnerable.txt                            |
+|                                                                       |
+| **Expected output:** pip-audit will list CVE IDs, affected package    |
+| versions, severity scores, and fixed versions for each vulnerable     |
+| dependency. Flask 1.0.0 alone carries multiple HIGH-severity CVEs.    |
++-----------------------------------------------------------------------+

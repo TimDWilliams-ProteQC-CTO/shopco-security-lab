@@ -1,0 +1,117 @@
++-----------------------------------------------------------------------+
+| **Day 1 --- Three Things to Take Home**                               |
+|                                                                       |
+| Module 6 Summary \| Flip over for Module 7 preview                    |
++-----------------------------------------------------------------------+
+
++----------------------+----------------------+-----------------------+
+| **1. Injection =     | **2. Context         | **3. Every gate has a |
+| Data treated as      | determines the       | blind spot**          |
+| Code**               | payload**            |                       |
+|                      |                      | Module 5 showed that  |
+| In every injection   | The same intent ---  | SAST catches code     |
+| attack --- SQLi,     | inject JavaScript    | patterns but misses   |
+| Command, XSS --- the | --- requires a       | design flaws. Module  |
+| attacker\'s input    | completely different | 6 adds: server-side   |
+| crosses a boundary   | payload depending on | input filtering       |
+| from \"data being    | where input lands:   | catches injection in  |
+| processed\" into     | between HTML tags,   | request parameters,   |
+| \"code being         | inside an attribute, | but misses DOM-based  |
+| executed.\" The fix  | inside a script      | XSS (the payload      |
+| is always structural | block, or in a URL   | never reaches the     |
+| separation:          | parameter. Reading   | server).              |
+| parameterise, encode | the page source      | Defence-in-depth is   |
+| for the correct      | reveals the context. | required.             |
+| output context, or   |                      |                       |
+| allowlist.           | **Evidence in        | **Evidence in         |
+|                      | today\'s lab:** *XSS | today\'s lab:** *XSS  |
+| **Evidence in        | Game: levels 3--6    | Level 3: your payload |
+| today\'s lab:**      | each require a       | never appears in      |
+| *Juice Shop login:   | different technique  | ZAP\'s HTTP requests  |
+| try \' OR 1=1\-- as  | for the same goal.*  | --- it lives entirely |
+| the username. ZAP    |                      | in the URL fragment   |
+| shows the raw SQL.*  |                      | and the browser\'s    |
+|                      |                      | JavaScript.*          |
++----------------------+----------------------+-----------------------+
+
++-----------------------------------------------------------------------+
+| **Can you state each principle in one sentence without looking at     |
+| this card?**                                                          |
+|                                                                       |
+| +---------------+---------------+---------------+---------------+     |
+| | **admin\'     | **\<img       | **; cat       | **            |     |
+| | \--**         | onerror=\>**  | /etc/passwd** | shell=False** |     |
+| |               |               |               |               |     |
+| | SQL comment   | XSS without a | Shell         | The one-word  |     |
+| | --- kills the | script tag    | metacharacter | fix for       |     |
+| | password      |               | chains        | command       |     |
+| | clause        |               | commands      | injection     |     |
+| +---------------+---------------+---------------+---------------+     |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Module 7 --- What Tomorrow Adds**                                   |
+|                                                                       |
+| Day 2 starts 09:30 \| A03 Injection & A10 SSRF (Part 2 of 2)          |
++-----------------------------------------------------------------------+
+
++-------------------------------+--------------------------------------+
+| +--------------------------+  | **Overnight Reflection Question**    |
+| | **Multi-stage attack     |  |                                      |
+| | chains**                 |  | BeEF can execute JavaScript in a     |
+| |                          |  | browser that visits a hooked page.   |
+| | A Browser Hooking attack |  |                                      |
+| | (BeEF) can hook a        |  | Command Injection can run arbitrary  |
+| | victim\'s browser and    |  | OS commands on the server.           |
+| | make it execute          |  |                                      |
+| | commands. Command        |  | **If you could chain these two       |
+| | Injection can execute    |  | capabilities together --- starting   |
+| | arbitrary OS commands.   |  | from a phishing email sent to a BBC  |
+| | Module 7 shows you how   |  | employee --- what would each step of |
+| | these two techniques     |  | the complete attack look like?**     |
+| | connect into a single    |  |                                      |
+| | end-to-end attack chain. |  | *There is no single right answer.    |
+| +--------------------------+  | Think about what the attacker        |
+| | **SSRF in depth**        |  | controls at each stage, and what     |
+| |                          |  | they need to move to the next one.*  |
+| | Server-Side Request      |  |                                      |
+| | Forgery moves the        |  |                                      |
+| | attacker\'s access from  |  |                                      |
+| | the public internet to   |  |                                      |
+| | the server\'s internal   |  |                                      |
+| | network. Cloud           |  |                                      |
+| | environments are         |  |                                      |
+| | particularly vulnerable  |  |                                      |
+| | --- the AWS metadata     |  |                                      |
+| | endpoint                 |  |                                      |
+| | (169.254.169.254) holds  |  |                                      |
+| | IAM credentials that     |  |                                      |
+| | grant full account       |  |                                      |
+| | access.                  |  |                                      |
+| +--------------------------+  |                                      |
+| | **Injection as a design  |  |                                      |
+| | failure**                |  |                                      |
+| |                          |  |                                      |
+| | Module 7 closes the      |  |                                      |
+| | loop: every injection    |  |                                      |
+| | vulnerability you\'ve    |  |                                      |
+| | seen this afternoon      |  |                                      |
+| | results from the same    |  |                                      |
+| | design failure --- no    |  |                                      |
+| | boundary between data    |  |                                      |
+| | and code. Module 7 shows |  |                                      |
+| | the systematic defences  |  |                                      |
+| | at each layer: input     |  |                                      |
+| | validation, output       |  |                                      |
+| | encoding, and runtime    |  |                                      |
+| | controls.                |  |                                      |
+| +--------------------------+  |                                      |
++-------------------------------+--------------------------------------+
+
+  -----------------------------------------------------------------------
+  **Tonight\'s optional reading:** PortSwigger Web Security Academy ---
+  portswigger.net/web-security/sql-injection and
+  portswigger.net/web-security/cross-site-scripting *(free, lab-based,
+  directly maps to today\'s material)*
+
+  -----------------------------------------------------------------------

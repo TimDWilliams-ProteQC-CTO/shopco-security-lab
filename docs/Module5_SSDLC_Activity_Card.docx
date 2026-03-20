@@ -1,0 +1,273 @@
++-----------------------------------------------------------------------+
+| **MODULE 5 --- SECURE DEVELOPMENT LIFECYCLES**                        |
+|                                                                       |
+| SSDLC Stage Mapping Exercise \| Breakout Group Activity               |
+|                                                                       |
+| *BBC Academy / JBI Training \| ShopCo Vulnerability Reference:        |
+| vulnerable_shop.py*                                                   |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **The Scenario**                                                      |
+|                                                                       |
+| In Module 4 you identified **eight deliberate security flaws** in     |
+| ShopCo\'s Flask source code. Every one was written by a developer. In |
+| a well-run Secure Software Development Lifecycle, each flaw would     |
+| have been caught **before it reached production.**                    |
+|                                                                       |
+| Your task: assign each flaw to the **earliest** SSDLC stage that      |
+| could have caught it --- and explain how in one sentence.             |
++-----------------------------------------------------------------------+
+
+**Stage Reference Key:**
+
++-------------+-------------+-------------+-------------+-------------+
+| **REQ**     | **CODE**    | **SAST**    | **CFG**     | **DAST**    |
+|             |             |             |             |             |
+| R           | Secure      | Static      | Config &    | DAST & Pen  |
+| equirements | Coding      | Analysis    | Secrets     | Test        |
+| & Threat    | Standards & | Tools       | Review      |             |
+| Modelling   | Review      | (SAST)      |             |             |
++-------------+-------------+-------------+-------------+-------------+
+
+**Instructions:**
+
+1.  Assign each flaw to the **earliest** SSDLC stage that would have
+    caught it. Write REQ / CODE / SAST / CFG / or DAST in the right-hand
+    column.
+
+2.  In the same cell, write one sentence explaining **how** that stage
+    would have surfaced the flaw.
+
+3.  You have **12 minutes.** Be ready to defend your most controversial
+    assignment to the room.
+
+  ------------------------------------------------------------------------------------------
+  **\#**   **Code Location**                **What the Flaw Is** **Earliest SSDLC Stage (REQ
+                                                                 / CODE / SAST / CFG /
+                                                                 DAST) + one sentence: how
+                                                                 would that stage have
+                                                                 caught it?**
+  -------- -------------------------------- -------------------- ---------------------------
+  **1**    app.secret_key = \"password\"    Hardcoded, trivial   
+                                            secret key in source 
+                                            code                 
+
+  **2**    app.config\[\"DEBUG\"\] = True   Debug mode enabled   
+                                            --- could reach      
+                                            production           
+
+  **3**    hashlib.md5(password.encode())   MD5 used for         
+                                            password hashing     
+
+  **4**    f\"SELECT\...WHERE               Raw f-string         
+           username=\'{username}\'\"        interpolation in SQL 
+                                            query                
+
+  **5**    session\[\"user\"\] =            Session stores       
+           row\[\"username\"\]              mutable username,    
+                                            not user_id          
+
+  **6**    def profile(): (no auth check)   Route has no         
+                                            authentication check 
+                                            at all               
+
+  **7**    user_id =                        User ID accepted     
+           request.args.get(\"user_id\")    from URL --- IDOR    
+                                            vector               
+
+  **8**    os.popen(f\"ping -c 2 {host}\")  Unsanitised user     
+                                            input passed to      
+                                            shell                
+  ------------------------------------------------------------------------------------------
+
++-----------------------------------------------------------------------+
+| **Group Discussion Questions**                                        |
+|                                                                       |
+| 4.  Flaws 1 and 2 are in the first 6 lines. What process or cultural  |
+|     pressure causes developers to leave \"temporary\" insecure config |
+|     in production code?                                               |
+|                                                                       |
+| 5.  Flaws 4 and 8 both concatenate user input into a command string.  |
+|     What **single principle** prevents both? State it in one          |
+|     sentence.                                                         |
+|                                                                       |
+| 6.  Flaws 6 and 7 combine so an unauthenticated attacker can dump the |
+|     whole user table. Which stage catches this first --- and why      |
+|     might another group disagree?                                     |
+|                                                                       |
+| 7.  Flaw 3 (MD5) lives in the database seeder, not a live route. What |
+|     does this tell you about the **scope** of security review beyond  |
+|     the main application code?                                        |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **INSTRUCTOR ANSWER KEY**                                             |
+|                                                                       |
+| Module 5 --- SSDLC Mapping Exercise                                   |
+|                                                                       |
+| *Reveal after groups have presented their answers --- not before*     |
++-----------------------------------------------------------------------+
+
+**Stage Key:**
+
++-------------+-------------+-------------+-------------+-------------+
+| **REQ**     | **CODE**    | **SAST**    | **CFG**     | **DAST**    |
+|             |             |             |             |             |
+| R           | Secure      | Static      | Config &    | DAST & Pen  |
+| equirements | Coding      | Analysis    | Secrets     | Test        |
+| & Threat    | Standards & | Tools       | Review      |             |
+| Modelling   | Review      | (SAST)      |             |             |
++-------------+-------------+-------------+-------------+-------------+
+
++---+----------+---------------------------------------------------------+
+| * | **       | **Reasoning --- Why This Stage? What Would It Have      |
+| * | Answer** | Caught?**                                               |
+| \ |          |                                                         |
+| # |          |                                                         |
+| * |          |                                                         |
+| * |          |                                                         |
++===+==========+=========================================================+
+| * | **CFG**  | The secret key is a hardcoded string literal in source  |
+| * |          | code --- present in every git commit from the moment it |
+| 1 |          | is written.                                             |
+| * |          |                                                         |
+| * |          | **How caught:** A secrets scanner (git-secrets,         |
+|   |          | truffleHog, gitleaks) flags \"password\" assigned to a  |
+|   |          | variable named secret_key. A pre-commit hook catches    |
+|   |          | this at push time, before code review begins. Bandit    |
+|   |          | (B105) also catches it under SAST.                      |
+|   |          |                                                         |
+|   |          | **Note:** *CFG and SAST are both valid. CFG is listed   |
+|   |          | first because pre-commit secrets scanning runs before   |
+|   |          | the SAST pipeline in most modern setups.*               |
++---+----------+---------------------------------------------------------+
+| * | **CFG**  | DEBUG=True is a configuration value that belongs in     |
+| * |          | environment config, not source code. Its presence in    |
+| 2 |          | source means it survives copy-paste to production.      |
+| * |          |                                                         |
+| * |          | **How caught:** A pre-deployment configuration          |
+|   |          | checklist or Bandit (B201 --- flask_debug_true) would   |
+|   |          | flag this. The fix --- reading from an environment      |
+|   |          | variable --- is a one-line change.                      |
+|   |          |                                                         |
+|   |          | **Note:** *Either CFG or SAST is defensible. Use the    |
+|   |          | disagreement to ask: which gate comes first in          |
+|   |          | delegates\' own pipelines?*                             |
++---+----------+---------------------------------------------------------+
+| * | **CODE** | MD5 for password hashing has been prohibited by every   |
+| * |          | reputable secure coding standard for over a decade.     |
+| 3 |          | This is a prohibited-function violation.                |
+| * |          |                                                         |
+| * |          | **How caught:** A coding standard mandating             |
+|   |          | bcrypt/scrypt/Argon2, enforced at PR review, catches    |
+|   |          | this before merge. Bandit (B324 --- hashlib) also flags |
+|   |          | it.                                                     |
+|   |          |                                                         |
+|   |          | **Note:** *The flaw lives in the DB seeder, not a live  |
+|   |          | route --- reinforcing that security review must cover   |
+|   |          | seeding scripts, migration scripts, and test fixtures,  |
+|   |          | not just production routes.*                            |
++---+----------+---------------------------------------------------------+
+| * | **CODE** | String interpolation inside a SQL call is explicitly    |
+| * |          | prohibited by every secure coding standard. A reviewer  |
+| 4 |          | who sees an f-string inside db.execute() should reject  |
+| * |          | the PR immediately.                                     |
+| * |          |                                                         |
+|   |          | **How caught:** Code review with a checklist item ---   |
+|   |          | \"no string formatting inside SQL calls\" --- catches   |
+|   |          | this at PR time. Bandit (B608) also detects it.         |
+|   |          | Parameterised queries are the mandated alternative.     |
+|   |          |                                                         |
+|   |          | **Note:** *SAST catches it too, but code review is the  |
+|   |          | earlier human gate. A reviewer would also question why  |
+|   |          | raw SQL is used rather than an ORM.*                    |
++---+----------+---------------------------------------------------------+
+| * | **DAST** | Storing a username in the session instead of a user_id  |
+| * |          | is a design decision with no static code signature.     |
+| 5 |          | Detecting it requires runtime reasoning about session   |
+| * |          | behaviour.                                              |
+| * |          |                                                         |
+|   |          | **How caught:** A penetration tester running            |
+|   |          | flask-unsign to decode and re-sign the session cookie   |
+|   |          | immediately sees the username stored there, and tests   |
+|   |          | whether substituting a different username grants        |
+|   |          | elevated access.                                        |
+|   |          |                                                         |
+|   |          | **Note:** *This is the ONLY flaw in the set effectively |
+|   |          | invisible to SAST. Use it to establish that pen testing |
+|   |          | is irreplaceable --- no automated tool alone catches    |
+|   |          | this class of flaw.*                                    |
++---+----------+---------------------------------------------------------+
+| * | **REQ**  | The absence of an authentication check is a missing     |
+| * |          | design decision, not a coding error. The requirement to |
+| 6 |          | protect the route was never written down.               |
+| * |          |                                                         |
+| * |          | **How caught:** A STRIDE threat model asking \"what if  |
+|   |          | an unauthenticated caller requests /profile?\"          |
+|   |          | generates the requirement: \"All profile endpoints must |
+|   |          | require an authenticated session.\" That requirement    |
+|   |          | blocks the route shipping without \@login_required.     |
+|   |          |                                                         |
+|   |          | **Note:** *SAST and code review cannot reliably detect  |
+|   |          | missing authentication --- they cannot know which       |
+|   |          | routes require auth unless that is expressed as a       |
+|   |          | requirement or policy rule.*                            |
++---+----------+---------------------------------------------------------+
+| * | **REQ**  | IDOR is a design flaw. The developer made a deliberate  |
+| * |          | choice to accept user_id from the URL. The threat model |
+| 7 |          | question --- \"what if the caller supplies a different  |
+| * |          | user\'s ID?\" --- was never asked.                      |
+| * |          |                                                         |
+|   |          | **How caught:** A threat model data flow diagram for    |
+|   |          | /profile prompts: \"Where does user_id come from, and   |
+|   |          | is the caller authorised to request that ID?\" The      |
+|   |          | answer --- URL parameter, no authorisation check ---    |
+|   |          | surfaces the flaw before code is written.               |
+|   |          |                                                         |
+|   |          | **Note:** *Flaws 6 and 7 together show the core value   |
+|   |          | of threat modelling: it surfaces authorisation          |
+|   |          | requirements that no static or dynamic tool can infer   |
+|   |          | from code alone.*                                       |
++---+----------+---------------------------------------------------------+
+| * | **SAST** | os.popen() with an f-string argument is a textbook SAST |
+| * |          | signature --- unambiguous and direct.                   |
+| 8 |          |                                                         |
+| * |          | **How caught:** Bandit flags this as B605               |
+| * |          | (start_process_with_a_shell) with HIGH severity and     |
+|   |          | HIGH confidence on every run. A coding standard         |
+|   |          | mandating subprocess.run() with shell=False would also  |
+|   |          | catch it at code review.                                |
+|   |          |                                                         |
+|   |          | **Note:** *Unlike Flaw 5, this has a reliable static    |
+|   |          | signature. SAST is the earliest practical gate --- more |
+|   |          | consistent than code review for this pattern.*          |
++---+----------+---------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Facilitation Notes --- Expected Disagreements**                     |
+|                                                                       |
+| -   Flaws 1 & 2: Bandit detects both (B105, B201). CFG vs SAST is a   |
+|     valid debate --- ask which gate runs first in delegates\' own     |
+|     pipeline.                                                         |
+|                                                                       |
+| -   Flaws 3 & 4: Developer delegates often assign to SAST. CODE is    |
+|     earlier --- PR review happens before the SAST pipeline run in     |
+|     most teams. Either is defensible; the earliness principle is the  |
+|     key lesson.                                                       |
+|                                                                       |
+| -   Flaws 6 & 7: Developer delegates frequently assign to Code        |
+|     Review. REQ is earlier --- the threat model question (\"what if   |
+|     unauthenticated?\") takes 30 seconds vs. hours of review.         |
+|     Cheaper-earlier is the key point.                                 |
+|                                                                       |
+| -   Flaw 5: Surprises most groups. The only flaw SAST cannot reliably |
+|     catch. Use it to establish that pen testing is irreplaceable, and |
+|     to preview Module 11: without security logging, this attack would |
+|     leave no trace.                                                   |
+|                                                                       |
+| **Key landing point for debrief:** No single gate catches all 8       |
+| flaws. REQ catches 2. CODE catches 2. SAST catches 3. CFG catches 2.  |
+| DAST catches 1. **You need all five layers.** That is why it is       |
+| called a lifecycle, not a checkpoint.                                 |
++-----------------------------------------------------------------------+

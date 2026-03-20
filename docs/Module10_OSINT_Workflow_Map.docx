@@ -1,0 +1,209 @@
++-----------------------------------------------------------------------+
+| **⚖ Legal & Ethical Requirement --- Read Before Starting**            |
+|                                                                       |
+| All OSINT activities on this course must be performed against: **(1)  |
+| targets explicitly provided by your instructor** or **(2) your own    |
+| infrastructure** or **(3) publicly available fictional targets        |
+| (example.com, iana.org).**                                            |
+|                                                                       |
+| Running these queries against BBC production infrastructure,          |
+| third-party organisations, or any target without explicit written     |
+| authorisation may constitute an offence under the **Computer Misuse   |
+| Act 1990** and / or the **UK GDPR**. When in doubt, ask your          |
+| instructor before running any query.                                  |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Module 10 --- OSINT Reconnaissance Workflow Map**                   |
+|                                                                       |
+| Five sources · What each reveals · Which OWASP category · What        |
+| attackers do with each finding                                        |
+|                                                                       |
+| *A05 Security Misconfiguration \| A06 Outdated Components \| BBC      |
+| Academy / JBI Training*                                               |
++-----------------------------------------------------------------------+
+
++-------------+-------------+-------------+-------------+-------------+
+| **Shodan**  | **DNS       | **          | **HTTP      | **GitHub &  |
+|             | Recon       | Certificate | Response    | Public      |
+| shodan.io   | naissance** | Tra         | Headers**   | Rep         |
+|             |             | nsparency** |             | ositories** |
+|             | dig,        |             | ZAP Proxy   |             |
+|             | nslookup,   | crt.sh \|   | \|          | github.com  |
+|             | dnsd        | searc       | security    | \| gitleaks |
+|             | umpster.com | h.censys.io | headers.com | \|          |
+|             |             |             |             | truffleHog  |
++=============+=============+=============+=============+=============+
+| **What Each |             |             |             |             |
+| Source      |             |             |             |             |
+| Reveals**   |             |             |             |             |
++-------------+-------------+-------------+-------------+-------------+
+| Inte        | Subdomains  | All TLS     | Server      | A           |
+| rnet-facing | (often      | c           | software    | ccidentally |
+| hosts, open | including   | ertificates | and version | committed   |
+| ports,      | staging,    | issued for  | (Server:    | secrets     |
+| service     | dev,        | a domain,   | header),    | (API keys,  |
+| banners,    | internal,   | including   | framework   | passwords,  |
+| TLS         | vpn,        | wildcard    | and version | tokens,     |
+| certificate | admin),     | certs,      | (X-         | cer         |
+| details,    | mail        | subdomains  | Powered-By: | tificates), |
+| software    | exchange    | never       | header),    | internal    |
+| version     | records,    | intended to | missing     | inf         |
+| strings,    | SPF/DMARC   | be public   | security    | rastructure |
+| geographic  | policy      | (\          | headers     | details in  |
+| location,   | gaps, zone  | *.internal, | (CSP, HSTS, | config      |
+| and         | transfer    | dev-,       | X-Fram      | files,      |
+| autonomous  | miscon      | staging-,   | e-Options), | historical  |
+| system      | figuration, | test-),     | cookie flag | secrets in  |
+| number.     | internal IP | expired     | de          | git history |
+| Shodan      | ranges      | c           | ficiencies, | even after  |
+| indexes     | leaked via  | ertificates | CORS        | removal,    |
+| anything a  | A records,  | that reveal | miscon      | internal    |
+| TCP         | cloud       | historical  | figuration, | hostnames   |
+| connection  | provider    | infr        | debug       | and IP      |
+| can read.   | rel         | astructure, | information | addresses   |
+|             | ationships. | and         | in error    | in deploy   |
+|             |             | certificate | responses.  | scripts,    |
+|             |             | m           |             | third-party |
+|             |             | isissuance. |             | service     |
+|             |             |             |             | c           |
+|             |             |             |             | redentials. |
++-------------+-------------+-------------+-------------+-------------+
+| **OWASP Top |             |             |             |             |
+| 10 Category |             |             |             |             |
+| of          |             |             |             |             |
+| Findings**  |             |             |             |             |
++-------------+-------------+-------------+-------------+-------------+
+| **A05       | **A05       | **A05       | **A05       | **A05       |
+| Security    | Security    | Security    | Security    | Security    |
+| Misco       | Misco       | Misco       | Misco       | Misco       |
+| nfiguration | nfiguration | nfiguration | nfiguration | nfiguration |
+| A06         | (exposed    | (exposed    | A06         | (credential |
+| Outdated    | internal    | non         | Outdated    | / config    |
+| C           | topology)** | -production | C           | exposure)** |
+| omponents** |             | envi        | omponents** |             |
+|             |             | ronments)** |             |             |
++-------------+-------------+-------------+-------------+-------------+
+| **Worked    |             |             |             |             |
+| Query       |             |             |             |             |
+| Examples    |             |             |             |             |
+| --- use     |             |             |             |             |
+| fictional / |             |             |             |             |
+| authorised  |             |             |             |             |
+| targets     |             |             |             |             |
+| only**      |             |             |             |             |
++-------------+-------------+-------------+-------------+-------------+
+| **Query /   | **Query /   | **Query /   | **Query /   | **Query /   |
+| command:**  | command:**  | command:**  | command:**  | command:**  |
+|             |             |             |             |             |
+| \# Search   | \#          | \# crt.sh   | \# In ZAP:  | \# GitHub   |
+| for a       | Enumerate   | --- all     | intercept   | search for  |
+| target      | subdomains: | certs for a | any         | secrets:    |
+| or          |             | domain:     | response    |             |
+| ganisation: | dig +short  |             |             | \"ex        |
+|             | ANY         | https://c   | \# and read | ample.com\" |
+| or          | example.com | rt.sh/?q=%. | the Headers | password    |
+| g:\"Example |             | example.com | tab.        | fi          |
+| Org         | \# Check    |             |             | lename:.env |
+| anisation\" | for zone    | \# Filter   | \# Key      |             |
+|             | transfer:   | to recent   | headers to  | \"ex        |
+| \# Find     |             | issuances:  | check:      | ample.com\" |
+| specific    | dig axfr    |             |             | api_key     |
+| software    | \@ns1.      | https://c   | Server:     |             |
+| versions:   | example.com | rt.sh/?q=%. | Ap          | \"AKIA\"    |
+|             | example.com | example.com | ache/2.4.51 | e           |
+| produ       |             |             | ← version!  | xtension:py |
+| ct:\"Apache | \# Find     | &excl       |             | ← AWS key   |
+| httpd\"     | mail        | ude=expired | X-          | prefix      |
+| vers        | records:    |             | Powered-By: |             |
+| ion:\"2.2\" |             | \# Censys   | PHP/7.2.0 ← | \# Search   |
+|             | dig MX      | --- full    | old!        | git history |
+| \# Find     | example.com | certificate |             | (local):    |
+| open admin  |             | search:     | X-          |             |
+| interfaces: | \# Check    |             | Powered-By: | git log     |
+|             | SPF record: | pa          | Express ←   | \--all      |
+| title:\"p   |             | rsed.names: | framework   | \--f        |
+| hpMyAdmin\" | dig TXT     | example.com |             | ull-history |
+| cou         | example.com |             | \# Missing  |             |
+| ntry:\"GB\" | \| grep spf | \# Extract  | =           | \--grep=\   |
+|             |             | unique      | miscon      | "password\" |
+| \# Find     | \# Reverse  | subdomains: | figuration: |             |
+| Werkzeug    | lookup on   |             |             | \#          |
+| debug       | found IP:   | curl -s     | Co          | Automated   |
+| consoles:   |             | \"https:/   | ntent-Secur | scanning:   |
+|             | dig -x      | /crt.sh/?q= | ity-Policy: |             |
+| http.title  | 2           |             | (absent)    | trufflehog  |
+| :\"Werkzeug | 03.0.113.47 | %.exa       |             | git         |
+| Debugger\"  |             | mple.com&ou | Stri        | https://    |
+|             |             | tput=json\" | ct-Transpor | github.com/ |
+|             |             |             | t-Security: |             |
+|             |             | \| jq       | (absent)    | org/repo    |
+|             |             | .\[\]       |             | \--on       |
+|             |             | .name_value | X-Fra       | ly-verified |
+|             |             | \| sort -u  | me-Options: |             |
+|             |             |             | (absent)    | gitleaks    |
+|             |             |             |             | detect      |
+|             |             |             | \#          | \--source . |
+|             |             |             | security    | -v          |
+|             |             |             | headers.com |             |
+|             |             |             | scores      |             |
+|             |             |             |             |             |
+|             |             |             | \# all      |             |
+|             |             |             | headers     |             |
+|             |             |             | aut         |             |
+|             |             |             | omatically. |             |
++-------------+-------------+-------------+-------------+-------------+
+| **What an   |             |             |             |             |
+| Attacker    |             |             |             |             |
+| Does with a |             |             |             |             |
+| Positive    |             |             |             |             |
+| Result**    |             |             |             |             |
++-------------+-------------+-------------+-------------+-------------+
+| A banner    | A subdomain | Certificate | \"Server:   | A removed   |
+| showing     | stagin      | T           | Werk        | secret is   |
+| \"Server:   | g.internal. | ransparency | zeug/0.14.1 | still in    |
+| Apac        | example.com | logs are    | Pyt         | git history |
+| he/2.2.14\" | resolving   | public and  | hon/3.6.8\" | --- git log |
+| maps        | to a public | permanent   | in a        | is          |
+| directly to | IP reveals  | --- every   | response    | permanent   |
+| CV          | a staging   | subdomain   | header      | unless      |
+| E-2011-3192 | environment | ever issued | gives the   | history is  |
+| (Range      | --- often   | a           | attacker:   | explicitly  |
+| header DoS) | with weaker | certificate | (1) exact   | rewritten.  |
+| and dozens  | c           | is          | Werkzeug    | An AWS key  |
+| of others.  | redentials, | di          | version →   | prefix      |
+| Shodan\'s   | test data,  | scoverable. | check       | (AKIA\...)  |
+| Exploits    | or debug    | Attackers   | Shodan      | committed   |
+| tab         | mode        | find        | Exploits    | and deleted |
+| cross       | enabled.    | st          | for CVEs;   | two years   |
+| -references | dev.        | aging-api.e | (2) Python  | ago is      |
+| the version | example.com | xample.com, | version →   | still fully |
+| with known  | may expose  | confirm it  | confirms    | searchable  |
+| public      | a git       | resolves,   | aged        | on GitHub.  |
+| exploits.   | repository  | and probe   | deployment; | Attacker    |
+| Attacker    | or admin    | it for      | (3)         | finds it,   |
+| selects the | panel. Zone | weaker      | Werkzeug    | tests it    |
+| h           | transfer    | aut         | 0.14.1 →    | against AWS |
+| ighest-CVSS | success     | hentication | CVE         | STS:GetCall |
+| exploit     | exposes the | or debug    | -2023-25577 | erIdentity, |
+| with a      | complete    | interfaces  | multipart   | and         |
+| public PoC  | internal    | that were   | DoS. Header | enumerates  |
+| and runs    | DNS map.    | never       | suppression | the         |
+| it.         |             | hardened    | via         | account\'s  |
+|             |             | for public  | Fla         | IAM         |
+|             |             | exposure.   | sk-Talisman | p           |
+|             |             |             | costs one   | ermissions. |
+|             |             |             | line of     |             |
+|             |             |             | code.       |             |
++-------------+-------------+-------------+-------------+-------------+
+
+  -----------------------------------------------------------------------
+  **The attacker\'s workflow in two steps:** (1) Run a Shodan search or
+  Certificate Transparency lookup --- no packets sent to the target,
+  fully passive, no legal risk. (2) Cross-reference any version string or
+  subdomain found with the NVD or Shodan Exploits. **The entire
+  reconnaissance phase for a targeted attack takes under 30 minutes and
+  requires no specialist tools.** This is why A05 and A06 are exploited
+  at scale by automated scanners before human attackers ever engage.
+
+  -----------------------------------------------------------------------

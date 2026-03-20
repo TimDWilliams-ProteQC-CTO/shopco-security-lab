@@ -1,0 +1,135 @@
++-----------------------------------------------------------------------+
+| **Module 11 --- TLS & PKI Trust Chain**                               |
+|                                                                       |
+| Why installing a root certificate allows decryption of any HTTPS      |
+| connection                                                            |
+|                                                                       |
+| *A02 Cryptographic Failures \| BBC Academy / JBI Training*            |
++-----------------------------------------------------------------------+
+
++---------------------------------+---+-----------------------------------+
+| +----------------------------+  |   | +------------------------------+  |
+| | **Legitimate TLS           |  |   | | **ZAP Man-in-the-Middle      |  |
+| | Handshake**                |  |   | | Intercept**                  |  |
+| |                            |  |   | |                              |  |
+| | +-----------------------+  |  |   | | +-------------------------+  |  |
+| | | **Browser / Client**  |  |  |   | | | **Browser / Client**    |  |  |
+| | |                       |  |  |   | | |                         |  |  |
+| | | *Firefox --- trusts   |  |  |   | | | *Firefox --- ZAP CA     |  |  |
+| | | the OS/Mozilla root   |  |  |   | | | root cert now           |  |  |
+| | | store*                |  |  |   | | | installed*              |  |  |
+| | +-----------------------+  |  |   | | +-------------------------+  |  |
+| |                            |  |   | |                              |  |
+| | **① Browser sends:         |  |   | | **① Browser sends            |  |
+| | ClientHello + supported    |  |   | | ClientHello → intercepted by |  |
+| | cipher suites**            |  |   | | ZAP**                        |  |
+| |                            |  |   | |                              |  |
+| | +-----------------------+  |  |   | | +-------------------------+  |  |
+| | | **Server              |  |  |   | | | **ZAP-Forged            |  |  |
+| | | Certificate**         |  |  |   | | | Certificate**           |  |  |
+| | |                       |  |  |   | | |                         |  |  |
+| | | *CN=target.com,       |  |  |   | | | *CN=target.com ---      |  |  |
+| | | signed by             |  |  |   | | | signed by ZAP CA*       |  |  |
+| | | Intermediate CA*      |  |  |   | | +-------------------------+  |  |
+| | +-----------------------+  |  |   | |                              |  |
+| |                            |  |   | | **② ZAP presents its own     |  |
+| | **② Browser receives       |  |   | | cert for target.com**        |  |
+| | server cert --- validates  |  |   | |                              |  |
+| | chain**                    |  |   | | +-------------------------+  |  |
+| |                            |  |   | | | **ZAP Root CA           |  |  |
+| | +-----------------------+  |  |   | | | Certificate**           |  |  |
+| | | **Intermediate CA     |  |  |   | | |                         |  |  |
+| | | Certificate**         |  |  |   | | | *Installed by delegate  |  |  |
+| | |                       |  |  |   | | | into Firefox trusted    |  |  |
+| | | *Issued by Root CA    |  |  |   | | | store*                  |  |  |
+| | | --- pre-installed by  |  |  |   | | +-------------------------+  |  |
+| | | OS*                   |  |  |   | |                              |  |
+| | +-----------------------+  |  |   | | **③ ZAP CA now trusted →     |  |
+| |                            |  |   | | forged cert accepted**       |  |
+| | **③ Intermediate cert      |  |   | |                              |  |
+| | signed by Root CA**        |  |   | | +-------------------------+  |  |
+| |                            |  |   | | | **Real Server           |  |  |
+| | +-----------------------+  |  |   | | | Certificate**           |  |  |
+| | | **Root CA             |  |  |   | | |                         |  |  |
+| | | Certificate**         |  |  |   | | | *ZAP connects onward    |  |  |
+| | |                       |  |  |   | | | --- real TLS to server* |  |  |
+| | | *Trusted root --- in  |  |  |   | | +-------------------------+  |  |
+| | | Firefox Trusted       |  |  |   | |                              |  |
+| | | Store*                |  |  |   | | **✓ From browser\'s view:    |  |
+| | +-----------------------+  |  |   | | valid chain --- padlock      |  |
+| |                            |  |   | | shown**                      |  |
+| | **✓ Valid chain: Browser → |  |   | |                              |  |
+| | Intermediate → Root**      |  |   | | **✗ ZAP decrypts, reads, and |  |
+| |                            |  |   | | re-encrypts all traffic**    |  |
+| | ✓ Browser verifies: Is the |  |   | |                              |  |
+| | cert for target.com?       |  |   | | **✗ Passwords, tokens,       |  |
+| |                            |  |   | | session cookies --- all      |  |
+| | ✓ Browser verifies: Is it  |  |   | | visible in ZAP**             |  |
+| | within the validity        |  |   | |                              |  |
+| | period?                    |  |   | | **✗ HTTPS provides NO        |  |
+| |                            |  |   | | protection against a trusted |  |
+| | ✓ Browser verifies: Has it |  |   | | MITM**                       |  |
+| | been revoked (CRL/OCSP)?   |  |   | +------------------------------+  |
+| |                            |  |   |                                   |
+| | **✓ Padlock shown. TLS     |  |   |                                   |
+| | session established.**     |  |   |                                   |
+| +----------------------------+  |   |                                   |
++---------------------------------+---+-----------------------------------+
+
++-----------------------------------------------------------------------+
+| **The Key Insight --- Why Installing a Root Certificate Grants Total  |
+| Decryption**                                                          |
+|                                                                       |
+| Your browser trusts hundreds of Root CAs by default --- Mozilla,      |
+| Google, Microsoft, Comodo, DigiCert, government CAs in multiple       |
+| countries. **Any of these can issue a valid certificate for any       |
+| domain.** When you install ZAP\'s root certificate, you are adding    |
+| ZAP to that list. ZAP can then sign a certificate for **any** site    |
+| --- bbc.co.uk, your bank, your email provider --- and your browser    |
+| will show a padlock for all of them.                                  |
+|                                                                       |
+| **This is not a flaw in TLS.** It is how TLS is designed. The padlock |
+| means: \"this connection is encrypted and the certificate was issued  |
+| by a CA your browser trusts.\" It does not mean: \"this connection    |
+| cannot be intercepted.\" **HTTPS security is only as strong as the    |
+| weakest CA in your trust store.**                                     |
++-----------------------------------------------------------------------+
+
+**Real-World Applications of the Same Attack Model**
+
++----------------------+----------------------+-----------------------+
+| **Deliberate /       | **Accidental Trust   | **Malicious CA        |
+| Legitimate MITM**    | Expansion**          | Abuse**               |
++----------------------+----------------------+-----------------------+
+| **Corporate TLS      | **Captive Portal     | **Kazakhstan 2019 /   |
+| Inspection**         | Certificates**       | CNNIC 2015**          |
+|                      |                      |                       |
+| Enterprise networks  | Public Wi-Fi captive | The Kazakhstan        |
+| often install a      | portals sometimes    | government required   |
+| corporate root CA on | install root         | ISPs to install a     |
+| managed devices so   | certificates to      | state root CA to      |
+| that firewalls can   | intercept traffic    | intercept citizen     |
+| inspect encrypted    | before               | HTTPS traffic.        |
+| traffic for data     | authentication.      | Mozilla and Google    |
+| loss prevention.     | Hotel and airport    | revoked trust within  |
+| Employees on         | Wi-Fi has been       | days. In 2015, CNNIC  |
+| corporate laptops    | observed doing this. | (a Chinese government |
+| may not know their   | Remove any           | CA) issued            |
+| HTTPS traffic is     | certificate          | unauthorised          |
+| being decrypted ---  | installed by a       | certificates for      |
+| check Security tab   | network you do not   | Google domains ---    |
+| in DevTools →        | control.             | trust was revoked     |
+| Issuer.              |                      | globally.             |
++----------------------+----------------------+-----------------------+
+
+  -----------------------------------------------------------------------
+  **Practical connection:** After installing ZAP\'s CA root certificate,
+  visit https://juice.shop in Firefox. The padlock appears --- but ZAP\'s
+  History tab shows every request and response in plaintext, including
+  the Authorization header containing your JWT token. That token grants
+  the same access as your password for the duration of the session.
+  **Remove the ZAP root certificate from Firefox after the practical.**
+  Settings → Privacy & Security → Certificates → View Certificates →
+  Authorities → ZAP → Delete.
+
+  -----------------------------------------------------------------------

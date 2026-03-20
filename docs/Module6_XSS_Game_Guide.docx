@@ -1,0 +1,221 @@
++-----------------------------------------------------------------------+
+| **XSS Game --- Level Guide**                                          |
+|                                                                       |
+| xss-game.appspot.com                                                  |
+|                                                                       |
+| *Module 6: A03 Injection \| BBC Academy / JBI Training*               |
++-----------------------------------------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Levels 1--2:** Your instructor will demonstrate these. Watch what   |
+| gets typed into the URL or form field, and look at the page source to |
+| understand why it works.                                              |
+|                                                                       |
+| **Levels 3--5:** Work through these yourself --- use the hints in the |
+| table below if you get stuck. Each level introduces a new XSS context |
+| that requires a different approach.                                   |
+|                                                                       |
+| **Level 6:** Expert level. If you reach this in the session ---       |
+| excellent. If not, it is an excellent take-home challenge. The        |
+| concepts it covers (CSP and dynamic script loading) are the most      |
+| important XSS mitigations in modern web development.                  |
++-----------------------------------------------------------------------+
+
++---+----------+------------+----------------+-----------------------+
+| * | **       | *          | **What to Look | **Key Takeaway**      |
+| * | Status** | *Concept** | For & Hints**  |                       |
+| \ |          |            |                |                       |
+| # |          |            |                |                       |
+| * |          |            |                |                       |
+| * |          |            |                |                       |
++===+==========+============+================+=======================+
+| * | **IN     | **What     | **Instructor   | **Key takeaway:**     |
+| * | STRUCTOR | this level | note:**        |                       |
+| 1 | DEMO**   | teaches:** |                | Script tags injected  |
+| * |          |            | The page title | into a GET parameter  |
+| * | **R      | The most   | says it        | execute in the        |
+|   | eflected | basic form | reflects query | visitor\'s browser.   |
+|   | XSS**    | of XSS.    | input. Try     | The URL itself        |
+|   |          | The search | injecting a    | becomes a weapon ---  |
+|   |          | box echoes | complete HTML  | share it and you      |
+|   |          | input      | element.       | attack anyone who     |
+|   |          | directly   |                | clicks it.            |
+|   |          | into the   |                |                       |
+|   |          | page.      |                |                       |
+|   |          | There is   |                |                       |
+|   |          | no         |                |                       |
+|   |          | filtering  |                |                       |
+|   |          | at all.    |                |                       |
++---+----------+------------+----------------+-----------------------+
+| * | **IN     | **What     | **Instructor   | **Key takeaway:**     |
+| * | STRUCTOR | this level | note:**        |                       |
+| 2 | DEMO**   | teaches:** |                | Stored XSS persists.  |
+| * |          |            | Script tags    | One payload attacks   |
+| * | **Stored | Input is   | are blocked.   | every user who loads  |
+|   | XSS**    | stored and | Think about    | the page. Script tags |
+|   |          | displayed  | other HTML     | are often filtered    |
+|   |          | to all     | elements that  | --- but event         |
+|   |          | subsequent | can trigger    | handlers on other     |
+|   |          | visitors.  | JavaScript     | elements (img, body,  |
+|   |          | More       | without a      | input) are frequently |
+|   |          | dangerous  | script tag.    | overlooked.           |
+|   |          | than       |                |                       |
+|   |          | reflected  |                |                       |
+|   |          | because it |                |                       |
+|   |          | doesn\'t   |                |                       |
+|   |          | require    |                |                       |
+|   |          | the victim |                |                       |
+|   |          | to click a |                |                       |
+|   |          | special    |                |                       |
+|   |          | link.      |                |                       |
++---+----------+------------+----------------+-----------------------+
+| * | **YOUR   | **What     | **What to look | **Key takeaway:**     |
+| * | TURN**   | this level | for:**         |                       |
+| 3 |          | teaches:** |                | DOM XSS is invisible  |
+| * | **D      |            | Read the       | to server-side input  |
+| * | OM-Based | The        | page\'s        | validation --- the    |
+|   | XSS**    | vul        | JavaScript     | payload never reaches |
+|   |          | nerability | source. Find   | the server.           |
+|   |          | is         | where it reads | Traditional WAFs and  |
+|   |          | entirely   | from           | server-side filters   |
+|   |          | cl         | doc            | cannot stop it. Only  |
+|   |          | ient-side. | ument.location | client-side output    |
+|   |          | No input   | and what it    | encoding works.       |
+|   |          | reaches    | does with the  |                       |
+|   |          | the server | value. The URL |                       |
+|   |          | ---        | fragment (the  |                       |
+|   |          | JavaScript | \# part) is    |                       |
+|   |          | in the     | never sent to  |                       |
+|   |          | page reads | the server.    |                       |
+|   |          | from the   |                |                       |
+|   |          | URL        | **Hint:** *The |                       |
+|   |          | fragment   | page loads     |                       |
+|   |          | (#) and    | image          |                       |
+|   |          | writes it  | filenames from |                       |
+|   |          | to the DOM | the URL        |                       |
+|   |          | unsafely.  | fragment. What |                       |
+|   |          |            | happens if     |                       |
+|   |          |            | instead of a   |                       |
+|   |          |            | filename you   |                       |
+|   |          |            | supply         |                       |
+|   |          |            | something that |                       |
+|   |          |            | closes an HTML |                       |
+|   |          |            | attribute?*    |                       |
++---+----------+------------+----------------+-----------------------+
+| * | **YOUR   | **What     | **What to look | **Key takeaway:**     |
+| * | TURN**   | this level | for:**         |                       |
+| 4 |          | teaches:** |                | XSS is                |
+| * | **XSS in |            | View the page  | context-dependent.    |
+| * | an HTML  | User input | source. Find   | The payload needed    |
+|   | Att      | is placed  | where your     | differs between:      |
+|   | ribute** | inside an  | input appears  | between tags, inside  |
+|   |          | HTML       | in the         | an attribute, inside  |
+|   |          | element    | generated      | a script block, and   |
+|   |          | attribute  | HTML. You are  | inside a URL. Output  |
+|   |          | (not       | inside an      | encoding must be      |
+|   |          | between    | attribute      | applied correctly for |
+|   |          | tags).     | value --- what | the specific context. |
+|   |          | Breaking   | character      |                       |
+|   |          | out of the | would close    |                       |
+|   |          | attribute  | that           |                       |
+|   |          | context    | attribute?     |                       |
+|   |          | requires   |                |                       |
+|   |          | different  | **Hint:**      |                       |
+|   |          | characters | *Your input    |                       |
+|   |          | than       | appears inside |                       |
+|   |          | breaking   | an onload or   |                       |
+|   |          | out of tag | similar        |                       |
+|   |          | content.   | attribute.     |                       |
+|   |          |            | Think about    |                       |
+|   |          |            | what closes a  |                       |
+|   |          |            | quoted         |                       |
+|   |          |            | attribute      |                       |
+|   |          |            | value, and     |                       |
+|   |          |            | what you can   |                       |
+|   |          |            | put            |                       |
+|   |          |            | immediately    |                       |
+|   |          |            | after to       |                       |
+|   |          |            | execute code.* |                       |
++---+----------+------------+----------------+-----------------------+
+| * | *        | **What     | **What to look | **Key takeaway:**     |
+| * | *STRETCH | this level | for:**         |                       |
+| 5 | GOAL**   | teaches:** |                | URL parameters that   |
+| * |          |            | Find a         | feed into href, src,  |
+| * | **XSS    | A redirect | parameter that | or action attributes  |
+|   | via URL  | URL        | controls where | are a distinct XSS    |
+|   | Re       | parameter  | a link points. | context. The          |
+|   | direct** | is passed  | Not all URL    | javascript: scheme is |
+|   |          | into an    | schemes are    | the classic vector.   |
+|   |          | href       | safe --- what  | Allowlisting https:   |
+|   |          | without    | can you put    | and http: schemes     |
+|   |          | v          | before the :   | prevents this.        |
+|   |          | alidation. | in a URL to    |                       |
+|   |          | The        | trigger        |                       |
+|   |          | j          | JavaScript?    |                       |
+|   |          | avascript: |                |                       |
+|   |          | URI scheme | **Hint:**      |                       |
+|   |          | allows     | *Think about   |                       |
+|   |          | code       | what URL       |                       |
+|   |          | execution  | schemes a      |                       |
+|   |          | when the   | browser        |                       |
+|   |          | link is    | supports       |                       |
+|   |          | clicked.   | beyond http:   |                       |
+|   |          |            | and https: --- |                       |
+|   |          |            | some of them   |                       |
+|   |          |            | execute code.* |                       |
++---+----------+------------+----------------+-----------------------+
+| * | **TAKE   | **What     | **What to look | **Key takeaway:**     |
+| * | HOME**   | this level | for:**         |                       |
+| 6 |          | teaches:** |                | Dynamic script        |
+| * | **DOM    |            | Find where the | loading is inherently |
+| * | XSS ---  | The page   | page decides   | dangerous without     |
+|   | Script   | d          | which script   | strict controls.      |
+|   | Inc      | ynamically | file to load.  | Content Security      |
+|   | lusion** | loads a    | The URL        | Policy (CSP) with a   |
+|   |          | script     | fragment is    | script-src directive  |
+|   |          | from a     | involved. Can  | and no unsafe-inline  |
+|   |          | URL. If    | you make it    | is the primary        |
+|   |          | the URL    | load a script  | mitigation --- this   |
+|   |          | source is  | from a domain  | is why CSP exists.    |
+|   |          | con        | you control    |                       |
+|   |          | trollable, | --- or from a  |                       |
+|   |          | an         | data URI?      |                       |
+|   |          | attacker   |                |                       |
+|   |          | can load   | **Hint:**      |                       |
+|   |          | an         | *Modern        |                       |
+|   |          | external   | browsers       |                       |
+|   |          | script     | restrict some  |                       |
+|   |          | from any   | script loading |                       |
+|   |          | server     | schemes.       |                       |
+|   |          | they       | Experiment     |                       |
+|   |          | control.   | with what the  |                       |
+|   |          |            | page will and  |                       |
+|   |          |            | won\'t load.   |                       |
+|   |          |            | The data: URI  |                       |
+|   |          |            | scheme can be  |                       |
+|   |          |            | your friend    |                       |
+|   |          |            | here.*         |                       |
++---+----------+------------+----------------+-----------------------+
+
+  ----------------- ----------------- ----------------- -----------------
+  **■ INSTRUCTOR    **■ YOUR TURN**   **■ STRETCH       **■ TAKE HOME**
+  DEMO** --- watch  --- complete in   GOAL** --- aim    --- expert level,
+  and understand    session           for this          finish in own
+                                                        time
+
+  ----------------- ----------------- ----------------- -----------------
+
++-----------------------------------------------------------------------+
+| **If you get stuck:** always start by viewing the page source         |
+| (Ctrl+U) and reading the JavaScript. The vulnerability is always      |
+| visible in the code. Use ZAP to intercept your requests and see       |
+| exactly what the server receives and returns. Experiment with unusual |
+| characters: \' \" \< \> / ; ( ) --- one of them will break the        |
+| context.                                                              |
+|                                                                       |
+| **The three XSS contexts you will encounter across all six levels:**  |
+| (1) between HTML tags --- broken by \< ; (2) inside an HTML attribute |
+| --- broken by \" or \' ; (3) inside a JavaScript string --- broken by |
+| \' or \" with ; to end the statement. Knowing which context your      |
+| input lands in tells you which character to try first.                |
++-----------------------------------------------------------------------+

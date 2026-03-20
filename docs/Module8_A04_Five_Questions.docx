@@ -1,0 +1,250 @@
++-----------------------------------------------------------------------+
+| **Module 8 --- A04: Five Questions to Ask Before Writing a Line of    |
+| Code**                                                                |
+|                                                                       |
+| A04 Insecure Design \| A portable pre-code checklist for every new    |
+| endpoint or feature                                                   |
+|                                                                       |
+| *BBC Academy / JBI Training \| Juice Shop evidence column --- applies |
+| to your Juice Shop practical*                                         |
++-----------------------------------------------------------------------+
+
++---+-----------+-------------+------------------+-----------------------+
+|   | **Ask     | **Why This  | **Juice Shop     | **Correct Design      |
+|   | Before    | Question    | Endpoint That    | Response**            |
+|   | Writing a | Matters**   | Fails to Answer  |                       |
+|   | Single    |             | It**             |                       |
+|   | Line of   |             |                  |                       |
+|   | Code**    |             |                  |                       |
++===+===========+=============+==================+=======================+
+| * | **Who is  | If you      | **/api/Users/:id | **Design response:**  |
+| * | allowed   | cannot      | (GET --- returns |                       |
+| 1 | to call   | answer this | full user        | Only the              |
+| * | this      | precisely   | record)**        | authenticated user\'s |
+| * | endpoint  | before      |                  | own record, or an     |
+|   | --- and   | writing the | Juice Shop\'s    | admin role. Enforce:  |
+| * | how will  | route, you  | user endpoint    | if request.user.id != |
+| * | the       | will write  | returns any      | target_id and         |
+| A | server    | Flaw 6 (no  | user\'s profile  | request.user.role !=  |
+| u | verify    | auth check) | including        | \"admin\": return     |
+| t | it?**     | or Flaw 7   | password hash    | 403. Add              |
+| h |           | (IDOR). The | and role to any  | \@login_required.     |
+| e |           | question    | authenticated    | Store user_id in      |
+| n |           | forces you  | user --- not     | session --- never in  |
+| t |           | to name the | just the account | URL.                  |
+| i |           | aut         | owner. The       |                       |
+| c |           | hentication | authorisation    |                       |
+| a |           | mechanism   | question was     |                       |
+| t |           | and the     | never answered:  |                       |
+| i |           | au          | \                |                       |
+| o |           | thorisation | "authenticated\" |                       |
+| n |           | rule        | and \"authorised |                       |
+| & |           | explicitly, | to see this      |                       |
+| A |           | not assume  | specific         |                       |
+| u |           | they exist. | record\" are not |                       |
+| t |           |             | the same thing.  |                       |
+| h |           |             |                  |                       |
+| o |           |             |                  |                       |
+| r |           |             |                  |                       |
+| i |           |             |                  |                       |
+| s |           |             |                  |                       |
+| a |           |             |                  |                       |
+| t |           |             |                  |                       |
+| i |           |             |                  |                       |
+| o |           |             |                  |                       |
+| n |           |             |                  |                       |
+| * |           |             |                  |                       |
+| * |           |             |                  |                       |
++---+-----------+-------------+------------------+-----------------------+
+| * | **What is | Answering   | **/rest/pr       | **Design response:**  |
+| * | the       | this        | oducts/search?q= |                       |
+| 2 | w         | question    | (GET --- product | Define the type,      |
+| * | orst-case | surfaces    | search)**        | length, and character |
+| * | input     | injection   |                  | set of every          |
+|   | this      | vectors     | Juice Shop\'s    | parameter at design   |
+| * | endpoint  | (Flaws 3,   | search accepts   | time. Specify: \"q is |
+| * | could     | 4, 8)       | arbitrary SQL    | a product name        |
+| I | receive   | before code | fragments in the | fragment, max 200     |
+| n | --- and   | exists. A   | q parameter. The | chars, alphanumeric   |
+| p | what      | developer   | design question  | and spaces only.\"    |
+| u | h         | who asks    | --- \"what if    | Anything outside that |
+| t | appens?** | \"what if   | the user submits | is rejected at the    |
+| & |           | the user    | a SQL keyword?\" | route boundary.       |
+| I |           | submits a   | --- was never    | Parameterise all DB   |
+| n |           | SQL keyword | asked. The       | queries regardless.   |
+| j |           | here?\" at  | answer reveals   |                       |
+| e |           | design time | the requirement: |                       |
+| c |           | adds a      | the input must   |                       |
+| t |           | pa          | be treated as a  |                       |
+| i |           | rameterised | literal string,  |                       |
+| o |           | query. One  | never as query   |                       |
+| n |           | who asks it | syntax.          |                       |
+| R |           | at pen-test |                  |                       |
+| e |           | time adds a |                  |                       |
+| s |           | patch.      |                  |                       |
+| i |           |             |                  |                       |
+| l |           |             |                  |                       |
+| i |           |             |                  |                       |
+| e |           |             |                  |                       |
+| n |           |             |                  |                       |
+| c |           |             |                  |                       |
+| e |           |             |                  |                       |
+| * |           |             |                  |                       |
+| * |           |             |                  |                       |
++---+-----------+-------------+------------------+-----------------------+
+| * | **What    | APIs return | **/api/Users/    | **Design response:**  |
+| * | data does | full        | (GET --- admin   |                       |
+| 3 | this      | objects     | user list)**     | Define the response   |
+| * | response  | because it  |                  | schema for each       |
+| * | expose    | is easier   | Juice Shop\'s    | caller, not the       |
+|   | --- and   | to write    | user list        | object. A user list   |
+| * | does the  | one generic | endpoint returns | for a management UI   |
+| * | caller    | serialiser  | password hashes, | needs: id, email,     |
+| E | actually  | than to     | totpSecret (MFA  | role, createdAt.      |
+| x | need all  | think about | seed), role, and | Everything else ---   |
+| c | of it?**  | what each   | lastLoginIp to   | password hash, MFA    |
+| e |           | caller      | any              | seed, login IP --- is |
+| s |           | needs. The  | adm              | excluded from the     |
+| s |           | design      | in-authenticated | serialiser. Use a DTO |
+| i |           | question    | caller. A        | or response filter,   |
+| v |           | forces the  | management UI    | not a direct ORM      |
+| e |           | minimal     | that shows a     | dump.                 |
+| D |           | -disclosure | list of          |                       |
+| a |           | decision    | usernames needs  |                       |
+| t |           | before the  | none of those    |                       |
+| a |           | serialiser  | fields. The      |                       |
+| E |           | is built    | response is a    |                       |
+| x |           | --- not     | credential       |                       |
+| p |           | after a     | database         |                       |
+| o |           | pen-tester  | disguised as an  |                       |
+| s |           | finds that  | API.             |                       |
+| u |           | /           |                  |                       |
+| r |           | api/profile |                  |                       |
+| e |           | returns     |                  |                       |
+| * |           | password    |                  |                       |
+| * |           | hashes.     |                  |                       |
++---+-----------+-------------+------------------+-----------------------+
+| * | **What    | Rate        | **               | **Design response:**  |
+| * | happens   | limiting is | /rest/user/login |                       |
+| 4 | if this   | almost      | (POST ---        | Define the rate limit |
+| * | endpoint  | never added | a                | at design time: max 5 |
+| * | is called | at design   | uthentication)** | POST /login attempts  |
+|   | 1,000     | time and    |                  | per IP per minute,    |
+| * | times in  | almost      | Juice Shop\'s    | max 10 per account    |
+| * | one       | always      | login endpoint   | per hour. After       |
+| R | minute?** | missing.    | accepts          | threshold: return 429 |
+| a |           | This        | unlimited        | Too Many Requests     |
+| t |           | question    | authentication   | with Retry-After      |
+| e |           | surfaces it | attempts with no | header. Log every     |
+| L |           | before the  | rate limiting    | attempt above         |
+| i |           | route       | and no account   | threshold as a        |
+| m |           | exists. It  | lockout. An      | RATE_LIMIT_EXCEEDED   |
+| i |           | also        | automated tool   | security event.       |
+| t |           | surfaces    | can attempt the  | Implement via         |
+| i |           | account     | entire           | Flask-Limiter or API  |
+| n |           | enumeration | rockyou.txt      | gateway rule.         |
+| g |           | (Flaw from  | wordlist against |                       |
+| & |           | Module 10): | any known        |                       |
+| D |           | a login     | username. The    |                       |
+| e |           | endpoint    | design question  |                       |
+| n |           | called      | --- \"what       |                       |
+| i |           | 1,000 times | happens at 1,000 |                       |
+| a |           | with        | calls/minute?\"  |                       |
+| l |           | different   | --- was never    |                       |
+| - |           | usernames   | asked.           |                       |
+| o |           | is a        |                  |                       |
+| f |           | credenti    |                  |                       |
+| - |           | al-stuffing |                  |                       |
+| S |           | attack ---  |                  |                       |
+| e |           | detectable  |                  |                       |
+| r |           | only if     |                  |                       |
+| v |           | rate        |                  |                       |
+| i |           | limiting    |                  |                       |
+| c |           | and logging |                  |                       |
+| e |           | are in      |                  |                       |
+| R |           | place.      |                  |                       |
+| e |           |             |                  |                       |
+| s |           |             |                  |                       |
+| i |           |             |                  |                       |
+| l |           |             |                  |                       |
+| i |           |             |                  |                       |
+| e |           |             |                  |                       |
+| n |           |             |                  |                       |
+| c |           |             |                  |                       |
+| e |           |             |                  |                       |
+| * |           |             |                  |                       |
+| * |           |             |                  |                       |
++---+-----------+-------------+------------------+-----------------------+
+| * | **What    | This        | *                | **Design response:**  |
+| * | would a   | question    | */api/Feedbacks/ |                       |
+| 5 | s         | closes the  | (POST --- submit | Name the threat: \"An |
+| * | uccessful | design loop | feedback)**      | authenticated user    |
+| * | attack on | with A09.   |                  | submits feedback with |
+|   | this      | It forces   | A successful     | a forged UserId.\"    |
+| * | endpoint  | the         | attack on this   | Design response: (1)  |
+| * | look like | developer   | endpoint is a    | UserId is always      |
+| T | --- and   | to name the | user submitting  | taken from the        |
+| h | would we  | threat      | feedback         | session --- never     |
+| r | know it   | before      | impersonating    | from the request      |
+| e | ha        | building    | another user     | body; (2) log         |
+| a | ppened?** | the         | (the UserId      | FEEDBACK_SUBMITTED    |
+| t |           | defence,    | field is         | with user_id,         |
+| A |           | and to      | use              | timestamp, and        |
+| w |           | specify the | r-controllable). | correlation_id on     |
+| a |           | log events  | Juice Shop logs  | every submission; (3) |
+| r |           | that would  | nothing about    | alert if same user_id |
+| e |           | make the    | feedback         | submits \>10          |
+| n |           | attack      | submission ---   | feedbacks per hour.   |
+| e |           | visible. An | no user_id, no   |                       |
+| s |           | endpoint    | content hash, no |                       |
+| s |           | with no     | rate event. An   |                       |
+| & |           | named       | attacker could   |                       |
+| L |           | threat has  | flood the system |                       |
+| o |           | no          | with fake        |                       |
+| g |           | co          | reviews and it   |                       |
+| g |           | rresponding | would be         |                       |
+| i |           | security    | invisible in the |                       |
+| n |           | event ---   | logs.            |                       |
+| g |           | which means |                  |                       |
+| * |           | A09 failure |                  |                       |
+| * |           | is built in |                  |                       |
+|   |           | at design   |                  |                       |
+|   |           | time.       |                  |                       |
++---+-----------+-------------+------------------+-----------------------+
+
++----------------------+----------------------+-----------------------+
+| **When to run these  | **Relationship to    | **These five          |
+| questions:**         | Module 5 SSDLC:**    | questions are not     |
+|                      |                      | STRIDE.**             |
+| -   Before writing a | Questions 1 and 3    |                       |
+|     new route or     | are REQ-stage ---    | STRIDE is a complete  |
+|     endpoint         | they produce access  | threat modelling      |
+|                      | control and data     | methodology ---       |
+| -   At every PR      | minimisation         | valuable, but         |
+|     review that adds | requirements that    | requires training and |
+|     a new URL        | SAST cannot infer.   | time. These five      |
+|                      |                      | questions are a       |
+| -   During a threat  | Question 2 is        | **portable,           |
+|     model workshop   | CODE-stage --- it    | zero-training first   |
+|     (use as a prompt | produces             | filter** that any     |
+|     list)            | parameterisation and | developer can run at  |
+|                      | allowlist            | a PR review in five   |
+| -   Before a pen     | requirements for     | minutes.              |
+|     test --- to      | code review.         |                       |
+|     predict what     |                      | They will not catch   |
+|     will be found    | Question 4 is        | every threat. But     |
+|                      | CFG-stage --- it     | they will catch       |
+| -   After a security | produces rate limit  | **every threat class  |
+|     incident --- to  | and gateway          | represented in the    |
+|     find the missed  | configuration        | ShopCo OWASP Bingo    |
+|     design decision  | requirements.        | exercise** --- which  |
+|                      |                      | covers A01, A02, A03, |
+|                      | Question 5 is        | A04, and A09 in a     |
+|                      | DAST-stage --- it    | single application.   |
+|                      | names the threat     |                       |
+|                      | that a pen tester    | **Use STRIDE for new  |
+|                      | should try, and the  | systems. Use these    |
+|                      | log event that       | five questions every  |
+|                      | proves it was        | day.**                |
+|                      | attempted.           |                       |
++----------------------+----------------------+-----------------------+

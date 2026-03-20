@@ -1,0 +1,250 @@
++-----------------------------------------------------------------------+
+| **Module 7 --- XSS Mitigations Reference Card**                       |
+|                                                                       |
+| What to actually do in code to prevent Cross-Site Scripting           |
+|                                                                       |
+| *A03 Injection --- XSS Defences \| BBC Academy / JBI Training*        |
++-----------------------------------------------------------------------+
+
++---------+--------------+----------------------+---------------------+
+| **Mitig | **What It    | **How to Implement** | **Common Mistake    |
+| ation** | Prevents &   |                      | That Defeats It**   |
+|         | Why Context  |                      |                     |
+|         | Matters**    |                      |                     |
++=========+==============+======================+=====================+
+| **      | Stops        | **In HTML body:**    | **⚠ Common          |
+| PRIMARY | reflected    |                      | mistake:**          |
+| DE      | and stored   | > {{ user_input \| e |                     |
+| FENCE** | XSS. Ensures | > }} {# Jinja2       | Applying HTML       |
+|         | that         | > auto-escapes by    | encoding to data    |
+| **Con   | u            | > default #}         | that lands inside a |
+| text-Se | ser-supplied |                      | JavaScript string.  |
+| nsitive | text is      | **In HTML            | Encoding \< as &lt; |
+| Output  | rendered as  | attribute:**         | inside a \<script\> |
+| Enc     | visible      |                      | block does nothing  |
+| oding** | characters   | > value=\"{{         | --- the JS engine   |
+|         | --- not      | > user_input }}\" {# | sees &lt;, not the  |
+|         | interpreted  | > always quote       | HTML parser. You    |
+|         | as HTML,     | > attributes #}      | need JSON encoding  |
+|         | JavaScript,  |                      | (\\u003c) for the   |
+|         | or CSS by    | **In JavaScript:**   | JS context.         |
+|         | the browser. |                      |                     |
+|         |              | > var x = {{         |                     |
+|         | **Why        | > user_input \|      |                     |
+|         | context      | > tojson }}; {#      |                     |
+|         | matters:**   | > JSON-encode #}     |                     |
+|         | The          |                      |                     |
+|         | browser\'s   | **In URL             |                     |
+|         | parser makes | parameter:**         |                     |
+|         | conte        |                      |                     |
+|         | xt-dependent | > urllib.par         |                     |
+|         | decisions. A | se.quote(user_input) |                     |
+|         | \< character | > {# percent-encode  |                     |
+|         | in HTML body | > #}                 |                     |
+|         | context      |                      |                     |
+|         | starts a     |                      |                     |
+|         | tag. The     |                      |                     |
+|         | same         |                      |                     |
+|         | character    |                      |                     |
+|         | inside a     |                      |                     |
+|         | JavaScript   |                      |                     |
+|         | string needs |                      |                     |
+|         | different    |                      |                     |
+|         | encoding.    |                      |                     |
+|         | One encoding |                      |                     |
+|         | scheme       |                      |                     |
+|         | cannot cover |                      |                     |
+|         | all          |                      |                     |
+|         | contexts.    |                      |                     |
++---------+--------------+----------------------+---------------------+
+| **BELT  | Limits what  | **Strict CSP         | **⚠ Common          |
+| &       | scripts can  | header:**            | mistake:**          |
+| B       | run even if  |                      |                     |
+| RACES** | an XSS       | > Cont               | unsafe-inline in    |
+|         | payload is   | ent-Security-Policy: | the script-src      |
+| **      | injected.    | > default-src        | directive. This is  |
+| Content | The browser  | > \'self\';          | added to \"fix\" a  |
+| S       | will refuse  |                      | site that uses      |
+| ecurity | to execute   | **Block inline       | inline scripts ---  |
+| Policy  | inline       | scripts:**           | but it completely   |
+| (CSP)** | scripts and  |                      | defeats the XSS     |
+|         | scripts from | > script-src         | protection. If you  |
+|         | untrusted    | > \'self\'           | see script-src      |
+|         | origins if a | > \'nonce-{random}\' | \'self\'            |
+|         | strict CSP   |                      | \'unsafe-inline\',  |
+|         | header is    | **Flask-Talisman:**  | the CSP provides no |
+|         | set.         |                      | XSS benefit         |
+|         |              | > Talisman(app,      | whatsoever.         |
+|         | **Why        | > c                  |                     |
+|         | context      | ontent_security_poli |                     |
+|         | matters:**   | cy={\'default-src\': |                     |
+|         | Output       | > \[\"\'self\'\"\]}) |                     |
+|         | encoding is  |                      |                     |
+|         | the primary  | **Report-only        |                     |
+|         | fix, but     | mode:**              |                     |
+|         | developers   |                      |                     |
+|         | make         | > Content-Security   |                     |
+|         | mistakes.    | -Policy-Report-Only: |                     |
+|         | CSP is a     | > \... \# test       |                     |
+|         | brow         | > before enforcing   |                     |
+|         | ser-enforced |                      |                     |
+|         | second line  |                      |                     |
+|         | of defence.  |                      |                     |
+|         | A strict CSP |                      |                     |
+|         | means that   |                      |                     |
+|         | even if an   |                      |                     |
+|         | attacker     |                      |                     |
+|         | injects a    |                      |                     |
+|         | script tag,  |                      |                     |
+|         | the browser  |                      |                     |
+|         | won\'t run   |                      |                     |
+|         | it.          |                      |                     |
++---------+--------------+----------------------+---------------------+
+| **BLAST | HttpOnly     | **Flask:**           | **⚠ Common          |
+| RADIUS  | prevents     |                      | mistake:**          |
+| LIMIT** | JavaScript   | > resp.set           |                     |
+|         | from reading | _cookie(\"session\", | Believing HttpOnly  |
+| **H     | the cookie   | > value,             | fully prevents XSS  |
+| ttpOnly | --- so even  | > httponly=True,     | exploitation. An    |
+| &       | if XSS runs, | > secure=True,       | attacker who cannot |
+| Secure  | it cannot    | > samesite=\"Lax\")  | steal the cookie    |
+| Cookie  | steal the    |                      | can still perform   |
+| Flags** | session      | **Session config:**  | actions as the user |
+|         | token.       |                      | (submitting forms,  |
+|         | Secure       | > a                  | making API calls)   |
+|         | ensures the  | pp.config\[\'SESSION | using XHR within    |
+|         | cookie is    | _COOKIE_HTTPONLY\'\] | the injected        |
+|         | only sent    | > = True             | script. HttpOnly    |
+|         | over HTTPS,  |                      | limits, but does    |
+|         | preventing   | **Verify in ZAP:**   | not eliminate, XSS  |
+|         | interception |                      | impact.             |
+|         | on           | > Response → Headers |                     |
+|         | unencrypted  | > → Set-Cookie: \... |                     |
+|         | connections. | > HttpOnly; Secure;  |                     |
+|         |              | > SameSite=Lax       |                     |
+|         | **Why        |                      |                     |
+|         | context      | **SameSite=Lax:**    |                     |
+|         | matters:**   |                      |                     |
+|         | Session      | > Blocks cross-site  |                     |
+|         | hijacking is | > cookie sending --- |                     |
+|         | the most     | > limits CSRF as     |                     |
+|         | common XSS   | > well as XSS impact |                     |
+|         | objective.   |                      |                     |
+|         | If the       |                      |                     |
+|         | session      |                      |                     |
+|         | cookie has   |                      |                     |
+|         | HttpOnly,    |                      |                     |
+|         | the          |                      |                     |
+|         | attacker\'s  |                      |                     |
+|         | injected     |                      |                     |
+|         | script       |                      |                     |
+|         | cannot read  |                      |                     |
+|         | doc          |                      |                     |
+|         | ument.cookie |                      |                     |
+|         | and          |                      |                     |
+|         | exfiltrate   |                      |                     |
+|         | it. This     |                      |                     |
+|         | limits XSS   |                      |                     |
+|         | from \"full  |                      |                     |
+|         | account      |                      |                     |
+|         | takeover\"   |                      |                     |
+|         | to \"actions |                      |                     |
+|         | within the   |                      |                     |
+|         | current      |                      |                     |
+|         | page.\"      |                      |                     |
++---------+--------------+----------------------+---------------------+
+| **SUP   | Rejecting or | **Allowlist          | **⚠ Common          |
+| PORTING | sanitising   | (best):**            | mistake:**          |
+| LAYER** | input that   |                      |                     |
+|         | contains     | > if not             | Using a blocklist   |
+| **Input | unexpected   | > re.full            | to strip or escape  |
+| Val     | characters   | match(r\"\[a-zA-Z0-9 | specific characters |
+| idation | (\< \> \" \' | > .,-\]{1,200}\",    | (\< \> &) and       |
+| as      | ; &) reduces | > value): reject()   | believing this is   |
+| Defe    | the attack   |                      | sufficient.         |
+| nce-in- | surface. Not | **Bleach             | Attackers use       |
+| Depth** | a primary    | (sanitise):**        | encoding tricks     |
+|         | XSS fix ---  |                      | (HTML entities,     |
+|         | a determined | > import bleach;     | Unicode,            |
+|         | attacker     | > bleach.clean(html, | URL-encoding, JS    |
+|         | will find    | > tags=\[            | escape sequences)   |
+|         | encoding     | \"b\",\"i\",\"u\"\], | to bypass           |
+|         | bypasses --- | > strip=True)        | character-based     |
+|         | but valuable |                      | filters. Blocklists |
+|         | as an        | **Never blocklist:** | always have gaps.   |
+|         | additional   |                      | Allowlists and      |
+|         | layer.       | > \# Do NOT try to   | output encoding do  |
+|         |              | > block \< \> \" --- | not.                |
+|         | **Why        | > encoding bypasses  |                     |
+|         | context      | > exist for every    |                     |
+|         | matters:**   | > blocklist          |                     |
+|         | Input        |                      |                     |
+|         | validation   | **Rule of thumb:**   |                     |
+|         | is often     |                      |                     |
+|         | confused     | > \# Validate at     |                     |
+|         | with the XSS | > input. Encode at   |                     |
+|         | fix. It is   | > output. Do both.   |                     |
+|         | not. A field | > Trust neither      |                     |
+|         | that only    | > alone.             |                     |
+|         | accepts      |                      |                     |
+|         | digits       |                      |                     |
+|         | cannot be    |                      |                     |
+|         | used for     |                      |                     |
+|         | XSS. But a   |                      |                     |
+|         | field that   |                      |                     |
+|         | accepts      |                      |                     |
+|         | \"names\"    |                      |                     |
+|         | (and allows  |                      |                     |
+|         | apostrophes, |                      |                     |
+|         | hyphens,     |                      |                     |
+|         | spaces)      |                      |                     |
+|         | cannot be    |                      |                     |
+|         | safely       |                      |                     |
+|         | filtered --- |                      |                     |
+|         | you must     |                      |                     |
+|         | encode the   |                      |                     |
+|         | output.      |                      |                     |
+|         | Validation   |                      |                     |
+|         | narrows the  |                      |                     |
+|         | attack       |                      |                     |
+|         | surface;     |                      |                     |
+|         | encoding     |                      |                     |
+|         | prevents the |                      |                     |
+|         | exploit.     |                      |                     |
++---------+--------------+----------------------+---------------------+
+
+**The Most Important Distinction --- Input Validation vs Output
+Encoding**
+
++-----------------------------------+-----------------------------------+
+| **Input Validation**              | **Output Encoding**               |
+|                                   |                                   |
+| -   **Happens at:** when data     | -   **Happens at:** when data     |
+|     enters the application        |     leaves the application and    |
+|                                   |     enters an output context      |
+| -   **Purpose:** reject data that |     (HTML, JS, URL, CSS)          |
+|     should never exist (SQL       |                                   |
+|     keywords in a postcode,       | -   **Purpose:** ensure the       |
+|     script tags in a number       |     browser\'s parser treats user |
+|     field)                        |     data as inert text, never as  |
+|                                   |     executable code structure     |
+| -   **Limitation:** you cannot    |                                   |
+|     safely filter all XSS         | -   **Strength:** works on any    |
+|     characters from free-text     |     input, including legitimate   |
+|     fields (names, addresses,     |     apostrophes, angle brackets,  |
+|     comments) without breaking    |     and special characters        |
+|     legitimate input              |                                   |
+|                                   | -   **Verdict:** the actual XSS   |
+| -   **Verdict:** necessary but    |     fix --- encoding cannot be    |
+|     not sufficient as an XSS      |     bypassed the way filters can  |
+|     control                       |                                   |
++-----------------------------------+-----------------------------------+
+
+  -----------------------------------------------------------------------
+  **Layer your defences:** validate at input (allowlist where possible)
+  **+** encode at output (context-appropriate) **+** set HttpOnly &
+  Secure cookie flags **+** deploy a strict Content Security Policy. **No
+  single mitigation is sufficient alone.** Each layer limits the impact
+  when --- not if --- another layer has a gap.
+
+  -----------------------------------------------------------------------

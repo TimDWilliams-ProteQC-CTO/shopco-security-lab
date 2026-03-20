@@ -1,0 +1,578 @@
++-----------------------------------------------------------------------+
+| **Module 10 --- A05 Flask Application Hardening Checklist**           |
+|                                                                       |
+| 17 items across Configuration, HTTP Security Headers, and Operational |
+| Hygiene                                                               |
+|                                                                       |
+| *A05 Security Misconfiguration \| BBC Academy / JBI Training \| Print |
+| and tick off against your own application*                            |
++-----------------------------------------------------------------------+
+
++---+-----------------------+------------------+------------------------+
+|   | **Item & Flask /      | **Vulnerable     | **How to Verify in ZAP |
+|   | Python Fix**          | State (ShopCo    | or Browser**           |
+|   |                       | Flaw / Juice     |                        |
+|   |                       | Shop             |                        |
+|   |                       | reference)**     |                        |
++===+=======================+==================+========================+
+| * |                       |                  |                        |
+| * |                       |                  |                        |
+| S |                       |                  |                        |
+| e |                       |                  |                        |
+| c |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| 1 |                       |                  |                        |
+| - |                       |                  |                        |
+| - |                       |                  |                        |
+| - |                       |                  |                        |
+| A |                       |                  |                        |
+| p |                       |                  |                        |
+| p |                       |                  |                        |
+| l |                       |                  |                        |
+| i |                       |                  |                        |
+| c |                       |                  |                        |
+| a |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| C |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| f |                       |                  |                        |
+| i |                       |                  |                        |
+| g |                       |                  |                        |
+| u |                       |                  |                        |
+| r |                       |                  |                        |
+| a |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| ( |                       |                  |                        |
+| A |                       |                  |                        |
+| 0 |                       |                  |                        |
+| 5 |                       |                  |                        |
+| S |                       |                  |                        |
+| e |                       |                  |                        |
+| c |                       |                  |                        |
+| u |                       |                  |                        |
+| r |                       |                  |                        |
+| i |                       |                  |                        |
+| t |                       |                  |                        |
+| y |                       |                  |                        |
+| M |                       |                  |                        |
+| i |                       |                  |                        |
+| s |                       |                  |                        |
+| c |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| f |                       |                  |                        |
+| i |                       |                  |                        |
+| g |                       |                  |                        |
+| u |                       |                  |                        |
+| r |                       |                  |                        |
+| a |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| ) |                       |                  |                        |
+| * |                       |                  |                        |
+| * |                       |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Secret key from     | ShopCo Flaw 1:   | Flask-Unsign:          |
+|   | environment --- never | app.secret_key = | flask-unsign \--decode |
+|   | hardcoded**           | \"password\"     | \--cookie \"\<paste    |
+|   |                       | Allows session   | cookie\>\" --- if the  |
+|   | \# Set at VM startup: | cookie forgery.  | secret is \"password\" |
+|   |                       | Anyone who reads | or \"dev\", session    |
+|   | export                | the source can   | forgery is possible.   |
+|   | FLASK_                | forge admin      |                        |
+|   | SECRET_KEY=\$(openssl | sessions.        |                        |
+|   | rand -hex 32)         |                  |                        |
+|   |                       |                  |                        |
+|   | \# In app:            |                  |                        |
+|   |                       |                  |                        |
+|   | app.secret_key =      |                  |                        |
+|   | os.environ\[\         |                  |                        |
+|   | 'FLASK_SECRET_KEY\'\] |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Debug mode off in   | ShopCo Flaw 2 /  | Trigger any 404 or     |
+|   | all non-local         | Module 7 demo:   | exception. If the      |
+|   | environments**        | DEBUG=True       | Werkzeug debugger      |
+|   |                       | enables Werkzeug | appears instead of a   |
+|   | \# Never in source    | interactive      | plain error page ---   |
+|   | code:                 | Python console   | debug mode is on.      |
+|   |                       | --- any          |                        |
+|   | \#                    | exception grants |                        |
+|   | ap                    | RCE to any       |                        |
+|   | p.config\[\"DEBUG\"\] | browser.         |                        |
+|   | = True ← BANNED       |                  |                        |
+|   |                       |                  |                        |
+|   | \# Only via           |                  |                        |
+|   | environment variable: |                  |                        |
+|   |                       |                  |                        |
+|   | ap                    |                  |                        |
+|   | p.config\[\'DEBUG\'\] |                  |                        |
+|   | = os.environ.get(     |                  |                        |
+|   |                       |                  |                        |
+|   | \'FLA                 |                  |                        |
+|   | SK_DEBUG\',\'false\') |                  |                        |
+|   | == \'true\'           |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Custom error        | Juice Shop:      | In ZAP: submit         |
+|   | handlers for 400,     | unhandled errors | malformed input to any |
+|   | 403, 404, 500**       | expose framework | endpoint. Check        |
+|   |                       | version, file    | response body for      |
+|   | \@                    | paths, and table | stack traces, file     |
+|   | app.errorhandler(500) | names in stack   | paths, or version      |
+|   |                       | traces. This is  | strings. All of these  |
+|   | def server_error(e):  | information      | should be absent.      |
+|   |                       | disclosure       |                        |
+|   | app.logger.error(e,   | enabling         |                        |
+|   | exc_info=True)        | targeted         |                        |
+|   |                       | exploitation.    |                        |
+|   | return                |                  |                        |
+|   | jsonify({\"error\":   |                  |                        |
+|   |                       |                  |                        |
+|   | \"Internal error\"}), |                  |                        |
+|   | 500                   |                  |                        |
+|   |                       |                  |                        |
+|   | \# Full stack trace   |                  |                        |
+|   | NEVER sent to browser |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **ALLOWED_HOSTS /     | An unrestricted  | In ZAP: modify the     |
+|   | SERVER_NAME           | Host header      | Host header on a       |
+|   | restricted**          | allows DNS       | request to             |
+|   |                       | rebinding        | \"evil.com\". If the   |
+|   | app.conf              | attacks and host | application responds   |
+|   | ig\[\'SERVER_NAME\'\] | header injection | normally (200 OK),     |
+|   | = \'api.example.com\' | --- an attacker  | host validation is     |
+|   |                       | can use the      | absent.                |
+|   | \# Or validate Host   | application to   |                        |
+|   | header in middleware: | generate         |                        |
+|   |                       | password reset   |                        |
+|   | ALLOWED =             | emails pointing  |                        |
+|   | {\'api.example.com\'} | to a malicious   |                        |
+|   |                       | domain.          |                        |
+|   | if request.host not   |                  |                        |
+|   | in ALLOWED:           |                  |                        |
+|   |                       |                  |                        |
+|   | abort(400)            |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **No default or       | Juice Shop:      | ZAP: use the \"Forced  |
+|   | placeholder           | a                | Browse\" active scan   |
+|   | credentials           | dmin@juice-sh.op | against /admin,        |
+|   | anywhere**            | uses a guessable | /login, /console. Then |
+|   |                       | password.        | try admin/admin,       |
+|   | \# Audit before every | ShopCo:          | admin/password,        |
+|   | deployment:           | admin/letmein is | admin/changeme against |
+|   |                       | the demo         | the login form.        |
+|   | grep -r               | credential.      |                        |
+|   | \"admin.\*            | Default          |                        |
+|   | admin\\\|password\\\| | credentials are  |                        |
+|   | changeme\\\|letmein\" | the first thing  |                        |
+|   | .                     | automated        |                        |
+|   |                       | scanners try.    |                        |
+|   | \# Or use:            |                  |                        |
+|   |                       |                  |                        |
+|   | trufflehog filesystem |                  |                        |
+|   | . \--only-verified    |                  |                        |
+|   |                       |                  |                        |
+|   | git-secrets \--scan   |                  |                        |
++---+-----------------------+------------------+------------------------+
+| * |                       |                  |                        |
+| * |                       |                  |                        |
+| S |                       |                  |                        |
+| e |                       |                  |                        |
+| c |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| 2 |                       |                  |                        |
+| - |                       |                  |                        |
+| - |                       |                  |                        |
+| - |                       |                  |                        |
+| H |                       |                  |                        |
+| T |                       |                  |                        |
+| T |                       |                  |                        |
+| P |                       |                  |                        |
+| S |                       |                  |                        |
+| e |                       |                  |                        |
+| c |                       |                  |                        |
+| u |                       |                  |                        |
+| r |                       |                  |                        |
+| i |                       |                  |                        |
+| t |                       |                  |                        |
+| y |                       |                  |                        |
+| H |                       |                  |                        |
+| e |                       |                  |                        |
+| a |                       |                  |                        |
+| d |                       |                  |                        |
+| e |                       |                  |                        |
+| r |                       |                  |                        |
+| s |                       |                  |                        |
+| ( |                       |                  |                        |
+| A |                       |                  |                        |
+| 0 |                       |                  |                        |
+| 5 |                       |                  |                        |
+| S |                       |                  |                        |
+| e |                       |                  |                        |
+| c |                       |                  |                        |
+| u |                       |                  |                        |
+| r |                       |                  |                        |
+| i |                       |                  |                        |
+| t |                       |                  |                        |
+| y |                       |                  |                        |
+| M |                       |                  |                        |
+| i |                       |                  |                        |
+| s |                       |                  |                        |
+| c |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| f |                       |                  |                        |
+| i |                       |                  |                        |
+| g |                       |                  |                        |
+| u |                       |                  |                        |
+| r |                       |                  |                        |
+| a |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| ) |                       |                  |                        |
+| * |                       |                  |                        |
+| * |                       |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Co                  | Absent CSP       | ZAP: Response Headers  |
+|   | ntent-Security-Policy | allows inline    | tab.                   |
+|   | (CSP)**               | scripts --- any  | \"Con                  |
+|   |                       | stored or        | tent-Security-Policy\" |
+|   | from flask_talisman   | reflected XSS    | absent = fail.         |
+|   | import Talisman       | payload executes | securityheaders.com    |
+|   |                       | without          | grades headers         |
+|   | Talisman(app,         | restriction.     | automatically --- aim  |
+|   | cont                  | ShopCo has no    | for A or B.            |
+|   | ent_security_policy={ | CSP. Juice Shop  |                        |
+|   |                       | has a            |                        |
+|   | \'default-src\':      | deliberately     |                        |
+|   | \[\"\'self\'\"\],     | weak CSP for the |                        |
+|   |                       | XSS challenges.  |                        |
+|   | \'script-src\':       |                  |                        |
+|   | \[\"\'self\'\"\],     |                  |                        |
+|   |                       |                  |                        |
+|   | })                    |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Stri                | Without HSTS, a  | ZAP: check             |
+|   | ct-Transport-Security | m                | Str                    |
+|   | (HSTS)**              | an-in-the-middle | ict-Transport-Security |
+|   |                       | can downgrade    | header in any HTTPS    |
+|   | Talisman(app,         | HTTPS to HTTP    | response. Max-age      |
+|   |                       | and intercept    | should be ≥31536000 (1 |
+|   | strict_tra            | session cookies  | year). If absent, test |
+|   | nsport_security=True, | --- even if the  | with SSLStrip concept  |
+|   |                       | Secure flag is   | in ZAP intercepting    |
+|   | s                     | set on cookies.  | proxy.                 |
+|   | trict_transport_secur | The first        |                        |
+|   | ity_max_age=31536000, | request over     |                        |
+|   |                       | HTTP exposes the |                        |
+|   | strict_               | cookie.          |                        |
+|   | transport_security_in |                  |                        |
+|   | clude_subdomains=True |                  |                        |
+|   |                       |                  |                        |
+|   | )                     |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **X-                  | Without nosniff, | ZAP: check             |
+|   | Content-Type-Options: | a browser may    | X-Content-Type-Options |
+|   | nosniff**             | interpret an     | in any response        |
+|   |                       | uploaded .txt    | header. Value must be  |
+|   | Talisman(app,         | file containing  | \"nosniff\". If        |
+|   | conte                 | HTML as          | absent, the            |
+|   | nt_type_options=True) | text/html and    | application is         |
+|   |                       | execute embedded | vulnerable to          |
+|   | \# Adds:              | scripts --- a    | content-type confusion |
+|   | X-                    | file upload XSS  | attacks.               |
+|   | Content-Type-Options: | vector.          |                        |
+|   | nosniff               |                  |                        |
+|   |                       |                  |                        |
+|   | \# Prevents MIME-type |                  |                        |
+|   | sniffing attacks      |                  |                        |
+|   |                       |                  |                        |
+|   | \# where browser      |                  |                        |
+|   | misinterprets content |                  |                        |
+|   | type                  |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **X-Frame-Options or  | Without          | ZAP: search for        |
+|   | frame-ancestors CSP** | X-Frame-Options, | X-Frame-Options in     |
+|   |                       | the application  | response headers. Test |
+|   | Talisman(app,         | can be embedded  | clickjacking manually: |
+|   |                       | in an            | create a page with     |
+|   | f                     | att              | \<iframe               |
+|   | rame_options=\'DENY\' | acker-controlled | s                      |
+|   |                       | iframe ---       | rc=\"http://target\"\> |
+|   | \# or \'SAMEORIGIN\'  | enabling         | and load it in         |
+|   | if you embed own      | clickjacking     | Firefox. If the iframe |
+|   | frames                | attacks that     | renders, clickjacking  |
+|   |                       | trick            | is possible.           |
+|   | )                     | authenticated    |                        |
+|   |                       | users into       |                        |
+|   | \# Modern             | performing       |                        |
+|   | alternative: CSP      | unintended       |                        |
+|   | frame-ancestors       | actions.         |                        |
+|   | \'none\'              |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Server /            | ShopCo Flaw 2    | ZAP: Response Headers  |
+|   | X-Powered-By headers  | side-effect /    | tab --- check for      |
+|   | suppressed**          | Module 10 OSINT: | Server: and            |
+|   |                       | \"Server:        | X-Powered-By: headers. |
+|   | \# Flask-Talisman     | W                | Both should be absent  |
+|   | does not suppress     | erkzeug/0.14.1\" | or contain a generic   |
+|   | Server:               | in the header    | value. Record what     |
+|   |                       | tells an         | version information is |
+|   | \# header --- do this | attacker the     | disclosed.             |
+|   | in the WSGI server:   | exact framework  |                        |
+|   |                       | version ---      |                        |
+|   | \# Gunicorn: no       | directly         |                        |
+|   | built-in suppression, | searchable in    |                        |
+|   |                       | Shodan Exploits  |                        |
+|   | \# use a reverse      | and the NVD.     |                        |
+|   | proxy (nginx) to      |                  |                        |
+|   | strip it:             |                  |                        |
+|   |                       |                  |                        |
+|   | \# proxy_hide_header  |                  |                        |
+|   | X-Powered-By;         |                  |                        |
+|   |                       |                  |                        |
+|   | \# server_tokens off; |                  |                        |
+|   | \# nginx              |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Referrer-Policy set | Without          | ZAP: check             |
+|   | explicitly**          | Referrer-Policy, | Referrer-Policy        |
+|   |                       | authenticated    | header. Then navigate  |
+|   | Talisman(app,         | URLs with        | from an authenticated  |
+|   |                       | tokens, user     | page to an external    |
+|   | referrer_             | IDs, or search   | link and check the     |
+|   | policy=\'strict-origi | terms in query   | Referer header in the  |
+|   | n-when-cross-origin\' | parameters are   | outbound request ---   |
+|   |                       | sent to every    | it should not contain  |
+|   | )                     | third-party      | session parameters.    |
+|   |                       | resource the     |                        |
+|   | \# Prevents full URL  | page loads.      |                        |
+|   | (with query params)   | Common in BBC    |                        |
+|   |                       | analytics        |                        |
+|   | \# leaking to         | integrations.    |                        |
+|   | third-party analytics |                  |                        |
+|   | / CDNs                |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Permissions-Policy  | Without          | ZAP: check             |
+|   | restricts browser     | Per              | Permissions-Policy     |
+|   | APIs**                | missions-Policy, | header in responses.   |
+|   |                       | an XSS payload   | Browser DevTools:      |
+|   | Talisman(app,         | or malicious     | click the lock icon →  |
+|   |                       | third-party      | Permissions --- the    |
+|   | permissions_policy={  | script can       | page should not have   |
+|   |                       | request camera,  | permission to access   |
+|   | \'geolocation\':      | microphone, or   | camera/microphone by   |
+|   | \'()\',               | geolocation      | default.               |
+|   |                       | access.          |                        |
+|   | \'microphone\':       | Particularly     |                        |
+|   | \'()\',               | relevant for     |                        |
+|   |                       | public-facing    |                        |
+|   | \'camera\': \'()\',   | BBC              |                        |
+|   |                       | applications.    |                        |
+|   | }                     |                  |                        |
+|   |                       |                  |                        |
+|   | )                     |                  |                        |
++---+-----------------------+------------------+------------------------+
+| * |                       |                  |                        |
+| * |                       |                  |                        |
+| S |                       |                  |                        |
+| e |                       |                  |                        |
+| c |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| 3 |                       |                  |                        |
+| - |                       |                  |                        |
+| - |                       |                  |                        |
+| - |                       |                  |                        |
+| O |                       |                  |                        |
+| p |                       |                  |                        |
+| e |                       |                  |                        |
+| r |                       |                  |                        |
+| a |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| a |                       |                  |                        |
+| l |                       |                  |                        |
+| H |                       |                  |                        |
+| y |                       |                  |                        |
+| g |                       |                  |                        |
+| i |                       |                  |                        |
+| e |                       |                  |                        |
+| n |                       |                  |                        |
+| e |                       |                  |                        |
+| ( |                       |                  |                        |
+| A |                       |                  |                        |
+| 0 |                       |                  |                        |
+| 5 |                       |                  |                        |
+| M |                       |                  |                        |
+| i |                       |                  |                        |
+| s |                       |                  |                        |
+| c |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| f |                       |                  |                        |
+| i |                       |                  |                        |
+| g |                       |                  |                        |
+| u |                       |                  |                        |
+| r |                       |                  |                        |
+| a |                       |                  |                        |
+| t |                       |                  |                        |
+| i |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+|   |                       |                  |                        |
+| + |                       |                  |                        |
+| A |                       |                  |                        |
+| 0 |                       |                  |                        |
+| 6 |                       |                  |                        |
+| O |                       |                  |                        |
+| u |                       |                  |                        |
+| t |                       |                  |                        |
+| d |                       |                  |                        |
+| a |                       |                  |                        |
+| t |                       |                  |                        |
+| e |                       |                  |                        |
+| d |                       |                  |                        |
+| C |                       |                  |                        |
+| o |                       |                  |                        |
+| m |                       |                  |                        |
+| p |                       |                  |                        |
+| o |                       |                  |                        |
+| n |                       |                  |                        |
+| e |                       |                  |                        |
+| n |                       |                  |                        |
+| t |                       |                  |                        |
+| s |                       |                  |                        |
+| ) |                       |                  |                        |
+| * |                       |                  |                        |
+| * |                       |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **All dependencies    | Module 5         | Run: pip-audit -r      |
+|   | pinned with hash      | requirements     | requirements.txt ---   |
+|   | verification**        | _vulnerable.txt: | any findings indicate  |
+|   |                       | Flask==1.0.0,    | outdated or vulnerable |
+|   | \# requirements.txt   | W                | dependencies. Run on   |
+|   | with hashes:          | erkzeug==0.14.1. | every PR in CI. Aim    |
+|   |                       | Unpinned or      | for zero HIGH/CRITICAL |
+|   | flask==3.1.1 \\       | under-pinned     | findings at            |
+|   |                       | dependencies     | deployment.            |
+|   | \--hash=sh            | allow silent     |                        |
+|   | a256:5f873c5184c8\... | upgrades to      |                        |
+|   |                       | broken versions  |                        |
+|   | \# Generate:          | --- or           |                        |
+|   |                       | supply-chain     |                        |
+|   | pip-compile           | substitution     |                        |
+|   | \--generate-hashes    | attacks.         |                        |
+|   | requirements.in       |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **pip-audit in CI     | A06 root cause:  | Check CI pipeline      |
+|   | pipeline --- gate on  | no automated CVE | configuration.         |
+|   | HIGH findings**       | checking means   | pip-audit should run   |
+|   |                       | outdated         | as a required check.   |
+|   | \# GitHub Actions     | libraries        | Alternatively: run     |
+|   | example:              | accumulate       | pip-audit -r           |
+|   |                       | silently. The    | requirements.txt       |
+|   | \- name: Audit        | Equifax breach   | locally and review the |
+|   | dependencies          | (2017, \$700M    | output for HIGH or     |
+|   |                       | settlement)      | CRITICAL findings.     |
+|   | run: \|               | resulted from a  |                        |
+|   |                       | known Apache     |                        |
+|   | pip install pip-audit | Struts CVE that  |                        |
+|   |                       | had a patch      |                        |
+|   | pip-audit -r          | available 2      |                        |
+|   | requirements.txt      | months before    |                        |
+|   |                       | exploitation.    |                        |
+|   | \# Exit 1 on any      |                  |                        |
+|   | finding = PR blocked  |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **TLS minimum version | Module 11 covers | Wireshark: filter on   |
+|   | TLS 1.2 (prefer       | TLS in depth --- | tls.handshake.type==1  |
+|   | 1.3)**                | but TLS version  | (Client Hello) and     |
+|   |                       | is an A05        | check                  |
+|   | \# Gunicorn with TLS  | M                | tls.handshake.version  |
+|   | (via nginx upstream): | isconfiguration. | field. SSLLabs.com     |
+|   |                       | TLS 1.0/1.1 are  | grades TLS             |
+|   | ssl_protocols TLSv1.2 | deprecated (RFC  | configuration --- A+   |
+|   | TLSv1.3;              | 8996, 2021). ZAP | is achievable with     |
+|   |                       | can demonstrate  | correct cipher         |
+|   | ssl_ciphers           | HTTPS            | configuration.         |
+|   | ECDHE-ECD             | interception     |                        |
+|   | SA-AES256-GCM-SHA384: | with a fake CA   |                        |
+|   |                       | root             |                        |
+|   | ECDHE-R               | certificate.     |                        |
+|   | SA-AES256-GCM-SHA384; |                  |                        |
+|   |                       |                  |                        |
+|   | \# Never: TLSv1.0,    |                  |                        |
+|   | TLSv1.1, SSLv3        |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **Directory listing   | Juice Shop:      | In ZAP or browser:     |
+|   | disabled on all       | /.well-known/    | navigate to /static/,  |
+|   | static paths**        | and /ftp/        | /assets/, /uploads/,   |
+|   |                       | directories are  | /ftp/. If a directory  |
+|   | \# Flask: static      | browsable ---    | listing appears, it is |
+|   | folder listing is off | delegates can    | a finding. ZAP\'s      |
+|   | by default.           | directly         | Spider tool discovers  |
+|   |                       | download files   | browsable directories  |
+|   | \# Nginx upstream:    | including        | automatically.         |
+|   |                       | acquisition.md.  |                        |
+|   | autoindex off; \#     | Directory        |                        |
+|   | should be the default | listing is a     |                        |
+|   |                       | pure A05         |                        |
+|   | \# Apache:            | m                |                        |
+|   |                       | isconfiguration. |                        |
+|   | Options -Indexes      |                  |                        |
+|   |                       |                  |                        |
+|   | \# Verify: no app     |                  |                        |
+|   | exposes /static/      |                  |                        |
+|   | listing               |                  |                        |
++---+-----------------------+------------------+------------------------+
+|   | **No sensitive data   | Even deleted     | Run trufflehog or      |
+|   | in git history**      | secrets persist  | gitleaks against the   |
+|   |                       | in git history   | repository. Check      |
+|   | \# Scan current code  | permanently.     | GitHub\'s own Secret   |
+|   | AND history:          | Module 10 OSINT: | Scanning alerts tab    |
+|   |                       | GitHub search    | (available for public  |
+|   | trufflehog git .      | for AKIA (AWS    | repos automatically,   |
+|   | \--only-verified      | key prefix)      | private repos with     |
+|   |                       | finds keys       | Advanced Security).    |
+|   | gitleaks detect       | committed and    | Any credential found   |
+|   | \--source . -v        | deleted years    | must be assumed        |
+|   |                       | ago. Rotation is | compromised and        |
+|   | \# If found, rotate   | the only fix --- | rotated immediately.   |
+|   | the credential        | history          |                        |
+|   | immediately.          | rewriting        |                        |
+|   |                       | removes the file |                        |
+|   | \# Then rewrite       | but the          |                        |
+|   | history:              | credential is    |                        |
+|   |                       | already          |                        |
+|   | git filter-repo       | compromised.     |                        |
+|   | \--path secret.txt    |                  |                        |
+|   | \--invert-paths       |                  |                        |
++---+-----------------------+------------------+------------------------+
+
+  -----------------------------------------------------------------------
+  **Quick wins:** Items 1 (secret key), 2 (debug mode), 8 (HSTS), and 13
+  (pip-audit in CI) are each a one-line change with the highest
+  risk-reduction-per-minute ratio on this list. If you do nothing else,
+  do these four first.
+
+  -----------------------------------------------------------------------

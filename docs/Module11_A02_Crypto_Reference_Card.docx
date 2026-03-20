@@ -1,0 +1,201 @@
++-----------------------------------------------------------------------+
+| **Module 11 --- A02 Cryptographic Failures: Developer Reference       |
+| Card**                                                                |
+|                                                                       |
+| Four contexts where cryptographic failures occur · Common mistake ·   |
+| Why it is weak · Correct implementation                               |
+|                                                                       |
+| *A02 Cryptographic Failures \| BBC Academy / JBI Training \|          |
+| Post-course reference for developer delegates*                        |
++-----------------------------------------------------------------------+
+
++----------------+----------------+----------------+-----------------+
+| **Transport    | **Password     | **Application  | **Tokens, JWTs  |
+| Security       | Storage**      | Data           | & Keys**        |
+| (TLS)**        |                | Encryption**   |                 |
+|                | **Course       |                | **Course        |
+| **Course       | reference:**   | **Course       | reference:**    |
+| reference:**   | *ShopCo Flaw 3 | reference:**   | *ShopCo Flaw 1  |
+| *Module 11 ZAP | (Module 4) /   | *New content   | (Module 4) /    |
+| MITM demo /    | Module 8       | --- extends    | Flask           |
+| Module 10      | bcrypt demo /  | Module 11 A02  | Supplement      |
+| hardening      | HashCat        | category*      | Module 6 JWT    |
+| checklist item | exercise*      |                | demo / Module   |
+| 10*            |                |                | 10 git secrets* |
++================+================+================+=================+
+| **Common       |                |                |                 |
+| Mistake**      |                |                |                 |
++----------------+----------------+----------------+-----------------+
+| **Common       | **Common       | **Common       | **Common        |
+| mistake:**     | mistake:**     | mistake:**     | mistake:**      |
+|                |                |                |                 |
+| Allowing TLS   | MD5, SHA-1,    | Using AES-ECB  | Weak or         |
+| 1.0 or TLS     | SHA-256, or    | mode           | hardcoded JWT   |
+| 1.1; accepting | any fast hash  | (identical     | secrets         |
+| weak cipher    | algorithm for  | plaintext      | (\"secret\",    |
+| suites; using  | passwords.     | blocks produce | \"password\",   |
+| self-signed    | Unsalted       | identical      | \"dev\"). JWT   |
+| certificates   | hashes. bcrypt | ciphertext     | algorithm       |
+| in production; | with rounds \< | blocks ---     | confusion       |
+| not enforcing  | 10. Storing    | structure is   | (accepting      |
+| HSTS so the    | passwords in   | visible).      | alg:none).      |
+| first request  | plaintext or   | Hardcoded      | Storing secrets |
+| can travel     | as reversible  | encryption     | in source code  |
+| over HTTP.     | encryption.    | keys or IVs.   | or environment  |
+|                |                | Using a        | files committed |
+|                |                | deterministic  | to git. Using   |
+|                |                | IV (same IV +  | predictable     |
+|                |                | same key =     | token values    |
+|                |                | same           | (sequential     |
+|                |                | ciphertext,    | IDs,            |
+|                |                | breaking       | base64-encoded  |
+|                |                | con            | username).      |
+|                |                | fidentiality). |                 |
+|                |                | Inventing a    |                 |
+|                |                | custom cipher. |                 |
++----------------+----------------+----------------+-----------------+
+| **Why It Is    |                |                |                 |
+| Cry            |                |                |                 |
+| ptographically |                |                |                 |
+| Weak**         |                |                |                 |
++----------------+----------------+----------------+-----------------+
+| TLS 1.0/1.1    | MD5 runs at    | AES-ECB is the | A hardcoded JWT |
+| are deprecated | \~10 billion   | canonical      | secret allows   |
+| (RFC 8996,     | hashes/second  | \"dangerous    | unlimited token |
+| 2021) and have | on commodity   | cipher mode\"  | forgery. The    |
+| known attacks  | GPU hardware.  | example --- it | alg:none attack |
+| (BEAST,        | bcrypt at      | produces a     | removes the     |
+| POODLE). A     | rounds=12 runs | recognisable   | signature       |
+| session cookie | at \~100       | pattern in     | entirely ---    |
+| transmitted    | hashes/second  | encrypted      | accepted by     |
+| over a single  | on the same    | images and     | libraries that  |
+| HTTP request   | hardware --- a | structured     | do not enforce  |
+| --- even once  | 10             | data (the      | an algorithm    |
+| --- is         | 0-million-fold | \"ECB          | allowlist. A    |
+| permanently    | speed          | penguin\"      | secret          |
+| exposed.       | difference.    | demonstrates   | committed to    |
+|                | The entire     | this           | git remains in  |
+|                | rockyou.txt    | visually). A   | history         |
+|                | wordlist       | hardcoded key  | permanently     |
+|                | cracks in      | cannot be      | even after      |
+|                | under 1 second | rotated; if    | deletion ---    |
+|                | against MD5;   | the codebase   | and GitHub\'s   |
+|                | it would take  | is ever        | secret scanning |
+|                | years against  | accessed by an | may have        |
+|                | bcrypt.        | attacker, all  | already indexed |
+|                |                | encrypted data | it.             |
+|                |                | is permanently |                 |
+|                |                | compromised.   |                 |
++----------------+----------------+----------------+-----------------+
+| **Correct      |                |                |                 |
+| Im             |                |                |                 |
+| plementation** |                |                |                 |
++----------------+----------------+----------------+-----------------+
+| \# nginx       | import bcrypt  | from           | import jwt, os  |
+| upstream       |                | crypt          |                 |
+| config:        | def            | ography.fernet | \# Secret from  |
+|                | hash           | import Fernet  | environment --- |
+| ssl_protocols  | _password(pwd: |                | 32 random       |
+| TLSv1.2        | str) -\>       | import os      | bytes:          |
+| TLSv1.3;       | bytes:         |                |                 |
+|                |                | \# Fernet uses | \# export       |
+| ssl_ciphers    | \# rounds=12 → | AES-CBC with   | JWT_SE          |
+| E              | \~250ms per    | HMAC-SHA256.   | CRET=\$(openssl |
+| CDHE-ECDSA-AES | hash           |                | rand -hex 32)   |
+| 256-GCM-SHA384 |                | \# Key from    |                 |
+|                | return         | environment    | SECRET =        |
+| :              | bcrypt.hashpw( | --- never      | os.environ\[\   |
+| ECDHE-RSA-AES2 |                | hardcoded:     | "JWT_SECRET\"\] |
+| 56-GCM-SHA384; | pwd.encode(),  |                |                 |
+|                |                | key =          | \# Sign with    |
+| ssl_prefer_    | bcrypt.gens    | os.e           | explicit        |
+| server_ciphers | alt(rounds=12) | nviron\[\"ENCR | algorithm:      |
+| on;            |                | YPTION_KEY\"\] |                 |
+|                | )              |                | token =         |
+| \#             |                | f =            | jwt.encode(     |
+| Flask-Talisman | def            | Fernet(key)    |                 |
+| (HSTS):        | check          |                | {\"sub\":       |
+|                | _password(pwd, | \# Encrypt:    | user_id,        |
+| Talisman(app,  | stored) -\>    |                | \"role\":       |
+|                | bool:          | token =        | \"user\"},      |
+| str            |                | f.encryp       |                 |
+| ict_transport_ | return         | t(b\"sensitive | SECRET,         |
+| security=True, | b              | data\")        |                 |
+|                | crypt.checkpw( |                | algo            |
+| s              |                | \# Decrypt     | rithm=\"HS256\" |
+| trict_transpor | pwd.encode(),  | (verifies HMAC | \# explicit     |
+| t_security_max | stored)        | integrity):    | allowlist       |
+| _age=31536000) |                |                |                 |
+|                | *Alternatives: | data =         | )               |
+| *Verify with:  | scrypt (Python | f.             |                 |
+| SSLLabs.com    | hashlib),      | decrypt(token) | \# Verify ---   |
+| for            | Argon2         |                | algorithm       |
+| production.    | (argon2-cffi). | *Fernet        | allowlist       |
+| Aim for A+     | Never use      | handles IV     | enforced:       |
+| grade. HSTS    | bcrypt rounds  | generation,    |                 |
+| forces all     | \< 10. Never   | HMAC           | payload =       |
+| future         | store the      | integrity, and | jwt.decode(     |
+| connections to | plaintext      | key derivation |                 |
+| use HTTPS ---  | password for   | correctly.     | token, SECRET,  |
+| no             | any purpose,   | Never          | algorithms      |
+| first-request  | including      | implement your | =\[\"HS256\"\]) |
+| exposure.*     | \"password     | own cipher.    |                 |
+|                | hint\"         | For            | *Always pass    |
+|                | features.*     | field-level    | algorithm       |
+|                |                | database       | s=\[\"HS256\"\] |
+|                |                | encryption,    | to              |
+|                |                | use            | jwt.decode().   |
+|                |                | SQ             | Never pass      |
+|                |                | LAlchemy-Utils | options={\"veri |
+|                |                | EncryptedType  | fy_signature\": |
+|                |                | backed by      | False}. Rotate  |
+|                |                | Fernet.*       | secrets         |
+|                |                |                | immediately if  |
+|                |                |                | any exposure is |
+|                |                |                | suspected. Use  |
+|                |                |                | flask-unsign to |
+|                |                |                | audit existing  |
+|                |                |                | session         |
+|                |                |                | cookies.*       |
++----------------+----------------+----------------+-----------------+
+
+**Two Principles That Prevent the Majority of A02 Failures**
+
++-----------------------------------+-----------------------------------+
+| **Principle 1 --- Never implement | **Principle 2 --- Never make your |
+| your own cryptography**           | own cryptographic decisions**     |
++-----------------------------------+-----------------------------------+
+| Every serious cryptographic break | ECB mode is available in every    |
+| in real-world software in the     | cryptographic library because     |
+| last decade came from one of two  | there are legitimate use cases    |
+| sources: a developer who thought  | (single-block encryption of       |
+| a simple XOR or Caesar-cipher     | random data). The library cannot  |
+| variant was \"good enough,\" or a | know that you\'re using it for    |
+| developer who combined standard   | structured multi-block data where |
+| primitives incorrectly.           | ECB is dangerous.                 |
+|                                   |                                   |
+| **The correct response to any     | **The correct response to any     |
+| cryptographic requirement is to   | cryptographic choice is: use the  |
+| find a well-reviewed, maintained  | library\'s recommended default,   |
+| library that handles the use case | not the most convenient option.** |
+| --- and use its defaults.**       |                                   |
+|                                   | Fernet uses AES-128-CBC by        |
+| For Python: cryptography.fernet   | default. **You do not need to     |
+| for symmetric, bcrypt for         | choose a cipher mode.** That is   |
+| passwords, PyJWT for tokens.      | the point. When a library makes   |
+| These are correct by default. Use | the cryptographic decision for    |
+| them.                             | you --- use that library.         |
++-----------------------------------+-----------------------------------+
+
+  -----------------------------------------------------------------------
+  **Practical connection:** The TLS demo in this module demonstrates
+  Column 1 (Transport) --- ZAP\'s MITM shows the consequence of a browser
+  trusting an additional root CA. The Juice Shop coupon and score
+  challenges demonstrate Column 3 (Application data) --- the coupon
+  signing algorithm is predictable because the key is not
+  cryptographically random. ShopCo Flaw 3 (MD5 passwords cracked in the
+  Module 4 HashCat exercise) is Column 2 (Password Storage). Columns 1--4
+  together cover every A02 failure class you have encountered across this
+  course.
+
+  -----------------------------------------------------------------------

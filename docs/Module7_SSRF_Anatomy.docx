@@ -1,0 +1,188 @@
++-----------------------------------------------------------------------+
+| **SSRF --- Anatomy of a Server-Side Request Forgery Attack**          |
+|                                                                       |
+| How a URL parameter becomes a weapon against your own internal        |
+| network                                                               |
+|                                                                       |
+| *Module 7: A10 SSRF \| BBC Academy / JBI Training*                    |
++-----------------------------------------------------------------------+
+
++----------------------+---+----------------------+---+----------------------+
+| **Panel A ---        |   | **Panel B --- The    |   | **Panel C --- The    |
+| Intended Behaviour** |   | SSRF Attack**        |   | Fix**                |
+|                      |   |                      |   |                      |
+| The developer builds |   | The attacker         |   | Validate the         |
+| a server-side URL    |   | replaces the URL     |   | destination URL on   |
+| fetcher so users can |   | parameter with an    |   | the server before    |
+| share links or the   |   | internal address.    |   | making the request.  |
+| app can fetch        |   | The server makes the |   | Allowlist permitted  |
+| metadata from        |   | request on the       |   | schemes and hosts;   |
+| external URLs.       |   | attacker\'s behalf   |   | block all            |
+|                      |   | --- from inside the  |   | private/internal IP  |
+| **User submits:**    |   | network perimeter.   |   | ranges explicitly.   |
+|                      |   |                      |   |                      |
+| **url=https://exa    |   | **Attacker           |   | **Fixed Python       |
+| mple.com/image.png** |   | submits:**           |   | code:**              |
+|                      |   |                      |   |                      |
+| **Server code:**     |   | url=**http://169.2   |   | import ipaddress,    |
+|                      |   | 54.169.254/latest/** |   | urllib.parse         |
+| import requests      |   |                      |   |                      |
+|                      |   | **meta-data/iam/sec  |   | **ALLOWED_HOSTS =    |
+| url =                |   | urity-credentials/** |   | {\"                  |
+| reque                |   |                      |   | api.example.com\"}** |
+| st.args.get(\"url\") |   | **The same server    |   |                      |
+|                      |   | code now fetches:**  |   | PRIVATE = \[         |
+| resp =               |   |                      |   |                      |
+| requests.get(url) \# |   | \# url is now an     |   | ipaddress.ip_netw    |
+| fetches the          |   | internal AWS         |   | ork(\"10.0.0.0/8\"), |
+| user-supplied URL    |   | metadata endpoint    |   |                      |
+|                      |   |                      |   | ipaddress.ip_network |
+| return resp.content  |   | resp =               |   | (\"172.16.0.0/12\"), |
+|                      |   | requests.            |   |                      |
+| **Network flow:**    |   | get(**\"http://169.2 |   | i                    |
+|                      |   | 54.169.254/\...\"**) |   | paddress.ip_network( |
+| <table>              |   |                      |   | \"192.168.0.0/16\"), |
+| <colgroup>           |   | \# Response: AWS IAM |   |                      |
+| <col                 |   | credentials in JSON  |   | i                    |
+| s                    |   |                      |   | paddress.ip_network( |
+| tyle="width: 27%" /> |   | return resp.content  |   | \"169.254.0.0/16\"), |
+| <col                 |   | \# sent directly to  |   |                      |
+| s                    |   | attacker             |   | \] \# link-local:    |
+| tyle="width: 15%" /> |   |                      |   | blocks AWS metadata  |
+| <col                 |   | **Network flow:**    |   |                      |
+| s                    |   |                      |   | def safe_fetch(url): |
+| tyle="width: 27%" /> |   | <table>              |   |                      |
+| <col                 |   | <colgroup>           |   | p =                  |
+| s                    |   | <col                 |   | urllib               |
+| tyle="width: 11%" /> |   | s                    |   | .parse.urlparse(url) |
+| <col                 |   | tyle="width: 27%" /> |   |                      |
+| s                    |   | <col                 |   | if p.scheme not in   |
+| tyle="width: 16%" /> |   | s                    |   | (                    |
+| </colgroup>          |   | tyle="width: 15%" /> |   | \"http\",\"https\"): |
+| <tbody>              |   | <col                 |   |                      |
+| <tr class="odd">     |   | s                    |   | raise                |
+| <td><p><strong>A     |   | tyle="width: 27%" /> |   | ValueError(\"bad     |
+| TTACKER</strong></p> |   | <col                 |   | scheme\")            |
+| <p                   |   | s                    |   |                      |
+| >(internet)</p></td> |   | tyle="width: 11%" /> |   | if p.hostname not in |
+| <td><p><str          |   | <col                 |   | ALLOWED_HOSTS:       |
+| ong>──▶</strong></p> |   | s                    |   |                      |
+| <p>HTTP              |   | tyle="width: 16%" /> |   | raise                |
+| req</p></td>         |   | </colgroup>          |   | ValueError(\"host    |
+| <td><p><strong       |   | <tbody>              |   | not allowed\")       |
+| >PUBLIC</strong></p> |   | <tr class="odd">     |   |                      |
+| <p><strong           |   | <td><p><strong>A     |   | ip =                 |
+| >SERVER</strong></p> |   | TTACKER</strong></p> |   | i                    |
+| <p><em>vuln          |   | <p                   |   | paddress.ip_address( |
+| erable</em></p></td> |   | >(internet)</p></td> |   |                      |
+| <td><p><str          |   | <td><p><str          |   | socket.gethos        |
+| ong>──▶</strong></p> |   | ong>──▶</strong></p> |   | tbyname(p.hostname)) |
+| <p>fetches           |   | <p>HTTP              |   |                      |
+| external             |   | req</p></td>         |   | if any(ip in n for n |
+| URL</p></td>         |   | <td><p><strong       |   | in PRIVATE):         |
+| <td><p><strong>I     |   | >PUBLIC</strong></p> |   |                      |
+| NTERNAL</strong></p> |   | <p><strong           |   | raise                |
+| <p><strong>          |   | >SERVER</strong></p> |   | ValueError(\"private |
+| SERVICE</strong></p> |   | <p><em>vuln          |   | IP blocked\")        |
+| <p><em>169           |   | erable</em></p></td> |   |                      |
+| .254.x</em></p></td> |   | <td><p><str          |   | **return             |
+| </tr>                |   | ong>──▶</strong></p> |   | requests.get(url)**  |
+| </tbody>             |   | <p>fetches           |   |                      |
+| </table>             |   | internal             |   | **Network flow (with |
+|                      |   | addr</p></td>        |   | fix):**              |
+| **✓** *External URL  |   | <td><p><strong>I     |   |                      |
+| --- expected and     |   | NTERNAL</strong></p> |   | <table>              |
+| safe*                |   | <p><strong>          |   | <colgroup>           |
+|                      |   | SERVICE</strong></p> |   | <col                 |
+| **✓** *Attacker      |   | <p><em>169           |   | s                    |
+| cannot influence     |   | .254.x</em></p></td> |   | tyle="width: 27%" /> |
+| what the server      |   | </tr>                |   | <col                 |
+| fetches*             |   | </tbody>             |   | s                    |
+|                      |   | </table>             |   | tyle="width: 15%" /> |
+| **✓** *Server talks  |   |                      |   | <col                 |
+| to the public        |   | **✗**                |   | s                    |
+| internet --- as      |   | *169.254.169.254 is  |   | tyle="width: 27%" /> |
+| designed*            |   | the AWS EC2 metadata |   | <col                 |
+|                      |   | IP*                  |   | s                    |
+|                      |   |                      |   | tyle="width: 11%" /> |
+|                      |   | **✗** *Returns IAM   |   | <col                 |
+|                      |   | role credentials in  |   | s                    |
+|                      |   | plaintext JSON*      |   | tyle="width: 16%" /> |
+|                      |   |                      |   | </colgroup>          |
+|                      |   | **✗** *Full AWS      |   | <tbody>              |
+|                      |   | account compromise   |   | <tr class="odd">     |
+|                      |   | possible from one    |   | <td><p><strong>A     |
+|                      |   | request*             |   | TTACKER</strong></p> |
+|                      |   |                      |   | <p                   |
+|                      |   |                      |   | >(internet)</p></td> |
+|                      |   |                      |   | <td><p><str          |
+|                      |   |                      |   | ong>──▶</strong></p> |
+|                      |   |                      |   | <p>HTTP              |
+|                      |   |                      |   | req</p></td>         |
+|                      |   |                      |   | <td><p><strong       |
+|                      |   |                      |   | >PUBLIC</strong></p> |
+|                      |   |                      |   | <p><strong           |
+|                      |   |                      |   | >SERVER</strong></p> |
+|                      |   |                      |   | <p><em>vuln          |
+|                      |   |                      |   | erable</em></p></td> |
+|                      |   |                      |   | <td><p><str          |
+|                      |   |                      |   | ong>──✗</strong></p> |
+|                      |   |                      |   | <p>BLOCKED</p></td>  |
+|                      |   |                      |   | <td><p><strong>I     |
+|                      |   |                      |   | NTERNAL</strong></p> |
+|                      |   |                      |   | <p><strong>          |
+|                      |   |                      |   | SERVICE</strong></p> |
+|                      |   |                      |   | <p><em>pro           |
+|                      |   |                      |   | tected</em></p></td> |
+|                      |   |                      |   | </tr>                |
+|                      |   |                      |   | </tbody>             |
+|                      |   |                      |   | </table>             |
+|                      |   |                      |   |                      |
+|                      |   |                      |   | **✓** *Allowlist:    |
+|                      |   |                      |   | only known external  |
+|                      |   |                      |   | hosts permitted*     |
+|                      |   |                      |   |                      |
+|                      |   |                      |   | **✓** *Private IP    |
+|                      |   |                      |   | ranges explicitly    |
+|                      |   |                      |   | blocked before       |
+|                      |   |                      |   | request*             |
+|                      |   |                      |   |                      |
+|                      |   |                      |   | **✓** *link-local    |
+|                      |   |                      |   | 169.254.0.0/16       |
+|                      |   |                      |   | blocks cloud         |
+|                      |   |                      |   | metadata*            |
++----------------------+---+----------------------+---+----------------------+
+
+**Why SSRF is Particularly Dangerous in Cloud Environments**
+
+  -------------------------------------------------- ----------------------- -----------------------
+  **Internal Target**                                **What the Attacker     **Real-World Example**
+                                                     Gets**                  
+
+  **http://169.254.169.254/latest/meta-data/iam/**   AWS IAM role            Capital One breach 2019
+                                                     credentials --- full    --- \$80M fine, 100M
+                                                     account access          records
+
+  **http://localhost:8080/admin**                    Internal admin panel    Many cloud apps expose
+                                                     not exposed to internet management APIs on
+                                                                             localhost
+
+  **http://192.168.1.1/**                            Router admin interface  Corporate network
+                                                     on internal LAN         pivoting after cloud
+                                                                             compromise
+
+  **file:///etc/passwd**                             Local server files if   Applicable when fetch
+                                                     file:// scheme not      libraries accept
+                                                     blocked                 file:// URLs
+  -------------------------------------------------- ----------------------- -----------------------
+
+  -----------------------------------------------------------------------
+  **SSRF vs SQL Injection --- the same root cause:** in SQLi, the
+  attacker\'s input changes the structure of a database query. In SSRF,
+  the attacker\'s input changes **where the server makes its next network
+  request.** Both are injection variants. The fix principle is identical:
+  never trust user input to determine the destination of a privileged
+  operation --- whether that operation is a database query or an HTTP
+  request.
+
+  -----------------------------------------------------------------------

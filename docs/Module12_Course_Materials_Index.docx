@@ -1,0 +1,260 @@
++-----------------------------------------------------------------------+
+| **Complete Course Materials Index**                                   |
+|                                                                       |
+| Every supplementary artefact --- module, OWASP category, audience,    |
+| format, and description                                               |
+|                                                                       |
+| *Module 12 \| BBC Academy / JBI Training \| Secure Web Application    |
+| Development*                                                          |
++-----------------------------------------------------------------------+
+
++----------------+----------------+----------------+-----------------+
+| **28**         | **12**         | **10**         | Every artefact  |
+|                |                |                | in this         |
+| supplementary  | course modules | OWASP Top 10   | collection was  |
+| artefacts      | covered        | categories     | designed as a   |
+|                |                | addressed      | standalone,     |
+|                |                |                | self-contained  |
+|                |                |                | resource. You   |
+|                |                |                | do not need to  |
+|                |                |                | attend another  |
+|                |                |                | course to use   |
+|                |                |                | them --- take   |
+|                |                |                | them back to    |
+|                |                |                | your desk and   |
+|                |                |                | apply them to   |
+|                |                |                | your own        |
+|                |                |                | applications.   |
++----------------+----------------+----------------+-----------------+
+
+  ---------------------------------------------------------------------------------------------------------------------------
+  **Mod**   **Document Title**                **OWASP          **Audience**    **Format**   **What it contains and when to
+                                              Categories**                                  use it**
+  --------- --------------------------------- ---------------- --------------- ------------ ---------------------------------
+  **All**   **Flask Security Supplement**     A01--A09 (all    **Developer**   Supplement   Module-by-module vulnerable/fixed
+                                              categories)                                   Flask code for all major OWASP
+                                                                                            categories. The single most
+                                                                                            comprehensive post-course
+                                                                                            developer reference in the
+                                                                                            collection.
+
+  **M4**    **vulnerable_shop.py**            A01 A02 A03 A05  **Developer**   Python App   Deliberately broken Flask app
+                                              A07                                           with 8 annotated flaws --- the
+                                                                                            OWASP Bingo exercise target
+                                                                                            application. Fully runnable on
+                                                                                            the Ubuntu VM.
+
+  **M4**    **vulnerable_shop_fixed.py**      A01 A02 A03 A05  **Developer**   Python App   Reference solution with every
+                                              A07                                           flaw corrected and inline
+                                                                                            comments explaining each fix. Run
+                                                                                            on port 5001 alongside the
+                                                                                            vulnerable version.
+
+  **M4**    **vulnerable_shop_CLEAN.py**      A01 A02 A03 A05  **All roles**   Python App   Annotation-stripped version for
+                                              A07                                           the Stage 1 identification
+                                                                                            exercise --- print or display
+                                                                                            without revealing the flaw
+                                                                                            comments.
+
+  **M4**    **Module4 OWASP Bingo Companion   A01 A02 A03 A05  **All roles**   Exercise     Three-stage exercise: identify 8
+            Guide**                           A07                                           flaws, exploit each, compare with
+                                                                                            fixed version. Includes full
+                                                                                            answer key, 8 scripted exploits,
+                                                                                            forensic questions, and tiered
+                                                                                            extension challenges.
+
+  **M5**    **Module5 SSDLC Activity Card**   All --- SSDLC    **All roles**   Exercise     Breakout group exercise mapping
+                                              process                                       the 8 ShopCo flaws to the
+                                                                                            earliest SSDLC stage that would
+                                                                                            have caught each. Delegate
+                                                                                            worksheet + instructor answer key
+                                                                                            in one document.
+
+  **M5**    **Module5 Bandit Reference        A03 A05          **Developer**   Reference    Landscape A4 showing exactly
+            Sheet**                                                                         which ShopCo flaws Bandit detects
+                                                                                            (5/8) and --- critically ---
+                                                                                            which it misses and why. Includes
+                                                                                            pip-audit connection and command
+                                                                                            reference.
+
+  **M5**    **requirements_vulnerable.txt**   A06              **Developer**   Config file  Deliberately outdated dependency
+                                                                                            file (Flask 1.0.0, Werkzeug
+                                                                                            0.14.1, etc.) carrying real CVEs.
+                                                                                            Run pip-audit -r
+                                                                                            requirements_vulnerable.txt to
+                                                                                            generate findings for the triage
+                                                                                            exercise.
+
+  **M6**    **Module6 SQLi Anatomy**          A03 Injection    **All roles**   Visual       Three-panel portrait visual:
+                                              (SQL)                                         intended query vs injected query
+                                                                                            (colour-coded syntax alteration)
+                                                                                            vs parameterised fix. Covers
+                                                                                            UNION injection. Designed for use
+                                                                                            during the Juice Shop practical.
+
+  **M6**    **Module6 Injection Reference     A03 Injection    **All roles**   Reference    Landscape A4: SQLi / Command /
+            Card**                            (all types)                                   XSS / SSRF in a 4-column grid ---
+                                                                                            root cause, payload, attacker
+                                                                                            gain, fix. Unifying principle
+                                                                                            strip. Keep beside keyboard
+                                                                                            during Modules 6 & 7 practicals.
+
+  **M6**    **Module6 XSS Game Guide**        A03 XSS          **All roles**   Exercise     Level-by-level guide for
+                                                                                            xss-game.appspot.com. Levels 1--2
+                                                                                            instructor demo notes; levels
+                                                                                            3--5 delegate with hints; level 6
+                                                                                            take-home expert challenge. Maps
+                                                                                            each level to XSS context type.
+
+  **M6**    **Module6 Bridge Card**           A03 Injection    **All roles**   Reference    Duplex A4 landscape: Side A ---
+                                                                                            Day 1 three core principles +
+                                                                                            recall strip. Side B --- Module 7
+                                                                                            preview with the overnight
+                                                                                            chain-attack reflection question.
+                                                                                            Print duplex.
+
+  **M7**    **Module7 Chain Attack Diagram**  A03 A10          **All roles**   Visual       5-stage swim-lane diagram: BeEF
+                                                                                            hook delivery → browser
+                                                                                            compromise → internal recon →
+                                                                                            command injection → OS access.
+                                                                                            Network boundary explicitly
+                                                                                            drawn. Enabling vulnerability
+                                                                                            table beneath.
+
+  **M7**    **Module7 SSRF Anatomy**          A10 SSRF         **All roles**   Visual       Three-panel portrait: legitimate
+                                                                                            URL fetch vs SSRF attack (AWS
+                                                                                            metadata endpoint
+                                                                                            169.254.169.254) vs fix with
+                                                                                            private IP blocklist. Real-world
+                                                                                            examples table including Capital
+                                                                                            One 2019.
+
+  **M7**    **Module7 XSS Mitigations Card**  A03 XSS          **Developer**   Reference    Landscape A4: 4 mitigations
+                                              (defences)                                    (output encoding, CSP,
+                                                                                            HttpOnly/Secure flags, input
+                                                                                            validation) --- mistake, why it
+                                                                                            fails, Flask implementation code.
+                                                                                            Input validation vs output
+                                                                                            encoding distinction.
+
+  **M8**    **Module8 A09 Exercise Card**     A09 Logging      **Developer**   Exercise     3-stage exercise: attack with no
+                                                                                            logging (5 unanswerable forensic
+                                                                                            questions), enable structured
+                                                                                            logging and repeat (all 5
+                                                                                            answered), forensic questions
+                                                                                            mapped to log fields. Juice Shop
+                                                                                            A09 tasks.
+
+  **M8**    **Module8 Log Quality Card**      A09 Logging      **Developer**   Reference    Landscape A4: Must Include (8
+                                                                                            mandatory fields), Before/After
+                                                                                            (print() vs log_event() JSON),
+                                                                                            Must Never Include (7 prohibited
+                                                                                            items with UK GDPR / ICO
+                                                                                            enforcement context).
+
+  **M8**    **Module8 A04 Five Questions**    A04 Insecure     **Developer**   Reference    Landscape A4: 5 pre-code
+                                              Design                                        questions for every new endpoint
+                                                                                            --- with Juice Shop endpoint that
+                                                                                            fails each question and the
+                                                                                            correct design response. Maps
+                                                                                            back to Module 5 SSDLC stages.
+
+  **M9**    **Module9 IdAA Concept Map**      A01 A07          **All roles**   Visual       Three horizontal bands (Identity
+                                                                                            / Authentication / Authorisation)
+                                                                                            with attack vectors and defensive
+                                                                                            controls per band. Flaw
+                                                                                            references throughout.
+                                                                                            Three-confusions box at bottom.
+
+  **M9**    **Module9 Session Lifecycle**     A07              **Developer**   Visual       Six-stage session lifecycle
+                                              Authentication                                (pre-auth → expiry) with
+                                                                                            server-side action, browser
+                                                                                            behaviour, attack vector, and
+                                                                                            defensive control at each stage.
+                                                                                            Juice Shop practical mapped to
+                                                                                            stages.
+
+  **M9**    **Module9 Access Control          A01 Access       **Developer**   Reference    Landscape A4: RBAC / ABAC / Least
+            Patterns**                        Control                                       Privilege --- definition, when to
+                                                                                            use, minimal Flask code, BBC
+                                                                                            scenario, common mistake.
+                                                                                            Decision guide strip. Juice Shop
+                                                                                            /administration failure mapped.
+
+  **M10**   **Module10 OSINT Workflow Map**   A05 A06          **All roles**   Visual       Landscape A4 matrix: 5 OSINT
+                                                                                            sources × 4 rows (reveals / OWASP
+                                                                                            mapping / worked query / attacker
+                                                                                            action). Legal/CMA1990 callout is
+                                                                                            the first element on the page.
+                                                                                            Use during practical.
+
+  **M10**   **Module10 A05 Hardening          A05 A06          **Developer**   Checklist    17 printable checkboxes across 3
+            Checklist**                                                                     sections: Configuration / HTTP
+                                                                                            Security Headers / Operational
+                                                                                            Hygiene. Every item anchored to
+                                                                                            ShopCo flaw or Juice Shop
+                                                                                            challenge. ZAP verification
+                                                                                            column.
+
+  **M10**   **Module10 A06 CVE Triage Card**  A06 Outdated     **All roles**   Reference    Landscape A4: CVSS severity bands
+                                              Components                                    with actions; 8-component CVSS
+                                                                                            vector decoder; worked Werkzeug
+                                                                                            0.14.1 triage example; 3-step
+                                                                                            Assess/Fix/Document triage
+                                                                                            process. pip-audit connection.
+
+  **M11**   **Module11 TLS PKI Trust Chain**  A02              **All roles**   Visual       Portrait: legitimate TLS
+                                              Cryptographic                                 handshake vs ZAP MITM
+                                              Failures                                      side-by-side using cert boxes.
+                                                                                            Why installing a root CA grants
+                                                                                            decryption of any HTTPS.
+                                                                                            Real-world variants (Kazakhstan
+                                                                                            2019, CNNIC 2015).
+
+  **M11**   **Module11 A08 Integrity          A08 Integrity    **All roles**   Visual       Landscape: 3 columns (Data
+            Taxonomy**                        Failures                                      Integrity / Software Integrity /
+                                                                                            Deserialization) × 4 rows.
+                                                                                            SolarWinds in Software Integrity.
+                                                                                            Python pickle RCE in
+                                                                                            Deserialization. Unifying
+                                                                                            principle footer.
+
+  **M11**   **Module11 A02 Crypto Reference   A02              **Developer**   Reference    Landscape: 4 contexts (TLS /
+            Card**                            Cryptographic                                 Passwords / App Encryption / JWT
+                                              Failures                                      & Keys) --- mistake, why it fails
+                                                                                            cryptographically, correct Python
+                                                                                            implementation. Two unifying
+                                                                                            principles strip.
+  ---------------------------------------------------------------------------------------------------------------------------
+
+**Quick-Access Groupings by Role**
+
++-----------------------------------+-----------------------------------+
+| **Top 6 post-course references    | **Top 4 post-course references    |
+| for Developer delegates**         | for Tester & Sysadmin delegates** |
++-----------------------------------+-----------------------------------+
+| -   Flask Security Supplement --- | -   Module10 OSINT Workflow Map   |
+|     comprehensive                 |     --- 5 sources, worked         |
+|     vulnerable/fixed code for all |     queries, attacker actions     |
+|     OWASP categories              |     (legal callout included)      |
+|                                   |                                   |
+| -   Module10 A05 Hardening        | -   Module9 Session Lifecycle --- |
+|     Checklist --- 17 actionable   |     6 stages with attack and      |
+|     items for Flask applications  |     defence at each boundary      |
+|                                   |                                   |
+| -   Module11 A02 Crypto Reference | -   Module7 Chain Attack Diagram  |
+|     Card --- cryptographic        |     --- BeEF → pivot → command    |
+|     failures across 4 contexts    |     injection with network        |
+|                                   |     boundary                      |
+| -   Module8 A04 Five Questions    |                                   |
+|     --- pre-code checklist for    | -   Module10 A06 CVE Triage Card  |
+|     every new endpoint            |     --- CVSS decoder and 3-step   |
+|                                   |     patching decision framework   |
+| -   Module9 Access Control        |                                   |
+|     Patterns --- RBAC/ABAC/Least  |                                   |
+|     Privilege with Flask examples |                                   |
+|                                   |                                   |
+| -   Module5 Bandit Reference      |                                   |
+|     Sheet --- what SAST catches   |                                   |
+|     and what it misses            |                                   |
++-----------------------------------+-----------------------------------+

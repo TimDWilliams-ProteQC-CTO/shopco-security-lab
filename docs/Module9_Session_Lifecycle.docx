@@ -1,0 +1,306 @@
++-----------------------------------------------------------------------+
+| **Module 9 --- Session Lifecycle Anatomy**                            |
+|                                                                       |
+| Six stages from anonymous visitor to logout --- with the attack and   |
+| defence at each boundary                                              |
+|                                                                       |
+| *A07 ID & Auth Failures \| BBC Academy / JBI Training*                |
++-----------------------------------------------------------------------+
+
++---+------------------+--------------+----------------+---------------+
+| * | **Stage Name &   | **What the   | **Attack at    | **Defensive   |
+| * | Server-Side      | Browser      | This Stage**   | Control**     |
+| S | Action**         | Sends /      |                |               |
+| t |                  | Receives**   |                |               |
+| a |                  |              |                |               |
+| g |                  |              |                |               |
+| e |                  |              |                |               |
+| * |                  |              |                |               |
+| * |                  |              |                |               |
++===+==================+==============+================+===============+
+| * | **Pre-           | **Brows      | **Attack:**    | **Defence:**  |
+| * | Authentication** | er/Client:** |                |               |
+| ① |                  | Sends no     | **▶ Session    | **✓**         |
+| * | **Server:** No   | credentials. | Fixation**:    | Generate a    |
+| * | session exists.  | May receive  | attacker sets  | fresh, random |
+|   | User is          | a pre-auth   | a known        | session ID on |
+|   | anonymous. No    | CSRF token   | session ID     | every new     |
+|   | user-specific    | or a         | before login   | connection    |
+|   | data should be   | \"log        | --- if the     |               |
+|   | accessible.      | in_session\" | server reuses  | **✓** Reject  |
+|   |                  | cookie.      | it post-login, | any session   |
+|   |                  |              | attacker       | ID that was   |
+|   |                  |              | inherits the   | set before    |
+|   |                  |              | authenticated  | a             |
+|   |                  |              | session        | uthentication |
+|   |                  |              |                | completed     |
+|   |                  |              |                |               |
+|   |                  |              |                | **✓** Never   |
+|   |                  |              |                | reuse         |
+|   |                  |              |                | pre-auth      |
+|   |                  |              |                | session       |
+|   |                  |              |                | tokens after  |
+|   |                  |              |                | login         |
++---+------------------+--------------+----------------+---------------+
+| * | *User submits    |              |                |               |
+| * | credentials →*   |              |                |               |
+| ↓ |                  |              |                |               |
+| * |                  |              |                |               |
+| * |                  |              |                |               |
++---+------------------+--------------+----------------+---------------+
+| * | **Credential     | **Brows      | **Attack:**    | **Defence:**  |
+| * | Submission**     | er/Client:** |                |               |
+| ② |                  | Sends POST   | **▶ Credential | **✓** bcrypt  |
+| * | **Server:**      | /login with  | stuffing**:    | with          |
+| * | Receives         | username and | automated      | rounds=12 --- |
+|   | username +       | password in  | replay of      | never MD5,    |
+|   | password over    | the request  | breached       | SHA1, or      |
+|   | HTTPS. Looks up  | body over    | use            | unsalted      |
+|   | the user record. | HTTPS.       | rname:password | hashes        |
+|   | Computes         | Receives     | pairs          |               |
+|   | b                | redirect or  |                | **✓** Rate    |
+|   | crypt.checkpw(). | error.       | **▶ Hash       | limiting: 5   |
+|   |                  |              | cracking       | attempts per  |
+|   |                  |              | (offline)**:   | IP per minute |
+|   |                  |              | if DB is       | (F            |
+|   |                  |              | compromised,   | lask-Limiter) |
+|   |                  |              | MD5/SHA1       |               |
+|   |                  |              | hashes crack   | **✓**         |
+|   |                  |              | in seconds     | Identical     |
+|   |                  |              | with HashCat   | error         |
+|   |                  |              |                | message:      |
+|   |                  |              | **▶ Username   | \"Invalid     |
+|   |                  |              | enumeration**: | credentials\" |
+|   |                  |              | different      | --- never     |
+|   |                  |              | error messages | \"User not    |
+|   |                  |              | reveal whether | found\"       |
+|   |                  |              | the account    |               |
+|   |                  |              | exists         | **✓** Log     |
+|   |                  |              |                | every         |
+|   |                  |              |                | attempt:      |
+|   |                  |              |                | LOGIN_SUCCESS |
+|   |                  |              |                | and           |
+|   |                  |              |                | LOGIN_FAILURE |
+|   |                  |              |                | with          |
+|   |                  |              |                | source_ip     |
++---+------------------+--------------+----------------+---------------+
+| * | *Credentials     |              |                |               |
+| * | verified →       |              |                |               |
+| ↓ | session token    |              |                |               |
+| * | created*         |              |                |               |
+| * |                  |              |                |               |
++---+------------------+--------------+----------------+---------------+
+| * | **Session Token  | **Brows      | **Attack:**    | **Defence:**  |
+| * | Creation**       | er/Client:** |                |               |
+| ③ |                  | Receives     | **▶ Session    | **✓**         |
+| * | **Server:**      | Set-Cookie:  | forgery**: if  | secret_key =  |
+| * | Generates a      | sessio       | secret_key is  | os.envir      |
+|   | c                | n=\<token\>; | weak or        | on\[\"FLASK_S |
+|   | ryptographically | HttpOnly;    | hardcoded,     | ECRET_KEY\"\] |
+|   | random session   | Secure;      | attacker signs | --- never     |
+|   | token. Signs it  | S            | their own      | hardcoded     |
+|   | with a secret    | ameSite=Lax. | session cookie |               |
+|   | key (HMAC-SHA256 | Stores the   | with any role  | **✓** Use     |
+|   | via Flask\'s     | cookie in    | or user_id     | o             |
+|   | secret_key).     | the          | (ShopCo Flaw   | s.urandom(32) |
+|   | Stores session   | browser\'s   | 1)             | to generate   |
+|   | state            | cookie jar.  |                | the key at    |
+|   | server-side or   |              | **▶ JWT        | provisioning  |
+|   | in a signed      |              | alg:none**:    | time          |
+|   | cookie.          |              | removes        |               |
+|   |                  |              | signature      | **✓** Set     |
+|   |                  |              | entirely ---   | HttpOnly flag |
+|   |                  |              | accepted by    | --- prevents  |
+|   |                  |              | libraries that | JavaScript    |
+|   |                  |              | do not enforce | reading the   |
+|   |                  |              | algorithm      | cookie (XSS   |
+|   |                  |              | allowlists     | mitigation)   |
+|   |                  |              |                |               |
+|   |                  |              | **▶ Token      | **✓** Set     |
+|   |                  |              | pre            | Secure flag   |
+|   |                  |              | dictability**: | --- cookie    |
+|   |                  |              | if tokens are  | only sent     |
+|   |                  |              | not            | over HTTPS    |
+|   |                  |              | cry            |               |
+|   |                  |              | ptographically | **✓**         |
+|   |                  |              | random, they   | se            |
+|   |                  |              | can be         | ssion.clear() |
+|   |                  |              | brute-forced   | then          |
+|   |                  |              |                | regenerate on |
+|   |                  |              |                | every login   |
+|   |                  |              |                | to prevent    |
+|   |                  |              |                | fixation      |
++---+------------------+--------------+----------------+---------------+
+| * | *Token stored in |              |                |               |
+| * | browser → used   |              |                |               |
+| ↓ | for all          |              |                |               |
+| * | subsequent       |              |                |               |
+| * | requests*        |              |                |               |
++---+------------------+--------------+----------------+---------------+
+| * | **Authenticated  | **Brows      | **Attack:**    | **Defence:**  |
+| * | Request**        | er/Client:** |                |               |
+| ④ |                  | Sends        | **▶ Cookie     | **✓**         |
+| * | **Server:**      | Cookie:      | stealing       | HttpOnly flag |
+| * | Receives each    | sessi        | (XSS)**:       | prevents      |
+|   | request with the | on=\<token\> | injected       | do            |
+|   | session cookie.  | on every     | script reads   | cument.cookie |
+|   | Validates        | request to   | d              | access even   |
+|   | signature.       | the same     | ocument.cookie | if XSS runs   |
+|   | Decodes the      | origin. The  | and POSTs it   |               |
+|   | user_id. Runs    | token is     | to an          | **✓** Secure  |
+|   | the              | sent         | attac          | flag ensures  |
+|   | authorisation    | a            | ker-controlled | cookie never  |
+|   | check for the    | utomatically | server (BeEF   | travels over  |
+|   | requested        | by the       | module 7       | HTTP          |
+|   | resource.        | browser ---  | practical)     |               |
+|   |                  | the user     |                | **✓**         |
+|   |                  | does not see | **▶ Network    | SameSite=Lax  |
+|   |                  | it.          | i              | blocks        |
+|   |                  |              | nterception**: | cross-site    |
+|   |                  |              | if Secure flag | POST requests |
+|   |                  |              | is absent,     | (CSRF         |
+|   |                  |              | token sent     | mitigation)   |
+|   |                  |              | over HTTP and  |               |
+|   |                  |              | visible to a   | **✓** Short   |
+|   |                  |              | man            | session       |
+|   |                  |              | -in-the-middle | expiry        |
+|   |                  |              |                | (15--60 mins  |
+|   |                  |              | **▶ CSRF**:    | idle timeout) |
+|   |                  |              | attacker\'s    | limits the    |
+|   |                  |              | page triggers  | window for a  |
+|   |                  |              | authenticated  | stolen token  |
+|   |                  |              | requests using |               |
+|   |                  |              | the stored     |               |
+|   |                  |              | cookie         |               |
+|   |                  |              | (mitigated by  |               |
+|   |                  |              | SameSite=Lax)  |               |
++---+------------------+--------------+----------------+---------------+
+| * | *Server          |              |                |               |
+| * | validates token  |              |                |               |
+| ↓ | on every request |              |                |               |
+| * | → then checks    |              |                |               |
+| * | authorisation*   |              |                |               |
++---+------------------+--------------+----------------+---------------+
+| * | **Authorisation  | **Brows      | **Attack:**    | **Defence:**  |
+| * | Check**          | er/Client:** |                |               |
+| ⑤ |                  | Receives the | **▶ IDOR**:    | **✓**         |
+| * | **Server:**      | response     | user changes   | \@l           |
+| * | Looks up the     | (200 OK, 403 | resource ID in | ogin_required |
+|   | authenticated    | Forbidden,   | URL to access  | on every      |
+|   | user\'s role and | or           | another        | protected     |
+|   | permissions in   | redirect).   | user\'s record | route --- no  |
+|   | the database     | The browser  | --- server     | exceptions    |
+|   | (never from the  | has no       | trusts the ID  |               |
+|   | session cookie). | visibility   | without        | **✓** Role    |
+|   | Checks whether   | into the     | checking       | fetched from  |
+|   | that role        | server\'s    | ownership      | database on   |
+|   | permits the      | a            | (ShopCo Flaw 7 | every request |
+|   | requested action | uthorisation | / Juice Shop:  | --- never     |
+|   | on the requested | logic.       | View Basket)   | from session  |
+|   | resource.        |              |                |               |
+|   | Returns 403 if   |              | **▶ Privilege  | **✓**         |
+|   | not permitted.   |              | escalation**:  | Resource      |
+|   |                  |              | role stored in | ownership     |
+|   |                  |              | session cookie | check: if     |
+|   |                  |              | rather than DB | reso          |
+|   |                  |              | --- attacker   | urce.owner_id |
+|   |                  |              | modifies       | !=            |
+|   |                  |              | cookie to      | cu            |
+|   |                  |              | claim admin    | rrent_user.id |
+|   |                  |              | role (ShopCo   | and not admin |
+|   |                  |              | Flaw 5)        | → 403         |
+|   |                  |              |                |               |
+|   |                  |              | **▶ Missing    | **✓** Deny by |
+|   |                  |              | access         | default: if   |
+|   |                  |              | control**:     | no explicit   |
+|   |                  |              | endpoint       | permission is |
+|   |                  |              | exists but has | granted, deny |
+|   |                  |              | no             |               |
+|   |                  |              | \@             | **✓** Log     |
+|   |                  |              | login_required | authorisation |
+|   |                  |              | or role check  | failures:     |
+|   |                  |              | (ShopCo Flaw 6 | AUTHZ_DENIED  |
+|   |                  |              | / Juice Shop:  | with user_id, |
+|   |                  |              | Admin Panel)   | resource,     |
+|   |                  |              |                | action        |
++---+------------------+--------------+----------------+---------------+
+| * | *Session ends by |              |                |               |
+| * | user action or   |              |                |               |
+| ↓ | expiry →*        |              |                |               |
+| * |                  |              |                |               |
+| * |                  |              |                |               |
++---+------------------+--------------+----------------+---------------+
+| * | **Logout &       | **Brows      | **Attack:**    | **Defence:**  |
+| * | Session Expiry** | er/Client:** |                |               |
+| ⑥ |                  | Receives     | **▶ Incomplete | **✓**         |
+| * | **Server:**      | Set-Cookie:  | logout**:      | se            |
+| * | Invalidates the  | session=;    | server clears  | ssion.clear() |
+|   | session          | expires=Thu, | client cookie  | clears the    |
+|   | server-side.     | 01 Jan 1970. | but does not   | session store |
+|   | Clears the       | The browser  | invalidate the | --- not just  |
+|   | session store    | deletes the  | server-side    | the cookie    |
+|   | entry. Issues a  | cookie.      | session ---    |               |
+|   | Set-Cookie with  | Subsequent   | stolen token   | **✓**         |
+|   | an expired date  | requests     | remains valid  | Maintain a    |
+|   | to delete the    | have no      | after logout   | server-side   |
+|   | cookie from the  | session      |                | session       |
+|   | browser.         | cookie.      | **▶ Session    | invalidation  |
+|   |                  |              | persistence    | list for      |
+|   |                  |              | after password | JWT/stateless |
+|   |                  |              | change**:      | tokens        |
+|   |                  |              | existing       |               |
+|   |                  |              | sessions not   | **✓**         |
+|   |                  |              | invalidated    | Invalidate    |
+|   |                  |              | when           | all sessions  |
+|   |                  |              | credentials    | when password |
+|   |                  |              | change ---     | is changed or |
+|   |                  |              | attacker       | MFA is        |
+|   |                  |              | retains access | re-enrolled   |
+|   |                  |              |                |               |
+|   |                  |              | **▶ Token      | **✓** Set     |
+|   |                  |              | reuse after    | absolute      |
+|   |                  |              | expiry**: if   | session       |
+|   |                  |              | tokens are     | lifetime      |
+|   |                  |              | stateless      | (e.g. 8       |
+|   |                  |              | (JWT) without  | hours) and    |
+|   |                  |              | a server-side  | idle timeout  |
+|   |                  |              | revocation     | (e.g. 30      |
+|   |                  |              | list, a stolen | minutes)      |
+|   |                  |              | token is valid |               |
+|   |                  |              | until it       |               |
+|   |                  |              | naturally      |               |
+|   |                  |              | expires        |               |
++---+------------------+--------------+----------------+---------------+
+
++-----------------------------------------------------------------------+
+| **Juice Shop practicals mapped to session lifecycle stages:**         |
+|                                                                       |
+| -   **Stage ②:** Login with admin@juice-sh.op --- observe the JWT     |
+|     token in ZAP\'s response. Decode it at jwt.io. What claims does   |
+|     it contain?                                                       |
+|                                                                       |
+| -   **Stage ③:** Juice Shop issues a JWT signed with a weak secret    |
+|     (\"secret\" or a common word). Use flask-unsign or jwt-cracker to |
+|     recover it. Forge an admin token.                                 |
+|                                                                       |
+| -   **Stage ④:** Cookie stealing practical: BeEF\'s \"Get Cookie\"    |
+|     command demonstrates what XSS yields from a session without the   |
+|     HttpOnly flag.                                                    |
+|                                                                       |
+| -   **Stage ⑤:** View Basket challenge: change the basket ID in the   |
+|     /rest/basket/:id request to another user\'s ID in ZAP. Observe    |
+|     that Juice Shop returns it --- a live IDOR.                       |
+|                                                                       |
+| -   **Stage ⑥:** After logging out of Juice Shop, replay the old JWT  |
+|     in ZAP\'s Repeater. Does it still work? What does this tell you   |
+|     about Juice Shop\'s session invalidation?                         |
++-----------------------------------------------------------------------+
+
+  -----------------------------------------------------------------------
+  **The session security principle:** a session token is a temporary,
+  delegated credential --- it carries the same privileges as the user\'s
+  password for its entire lifetime. Every control that protects the
+  password (not transmitted in clear, not stored in readable form,
+  invalidated after use) should also apply to the session token.
+
+  -----------------------------------------------------------------------

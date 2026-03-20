@@ -1,0 +1,288 @@
++-----------------------------------------------------------------------+
+| **Module 11 --- A08 Software & Data Integrity Failures: Taxonomy**    |
+|                                                                       |
+| From form field price manipulation to SolarWinds --- three            |
+| sub-categories, one root cause                                        |
+|                                                                       |
+| *A08 Integrity Failures \| BBC Academy / JBI Training*                |
++-----------------------------------------------------------------------+
+
++---+----------------------+----------------------+----------------------+
+| * | **Data Integrity     | **Software Integrity | **Insecure           |
+| * | Failures**           | Failures**           | Deserialization**    |
+| S |                      |                      |                      |
+| e | *Trusting            | *Build pipelines,    | *Deserializing       |
+| v | client-supplied      | update mechanisms,   | attacker-controlled  |
+| e | values that should   | and dependencies     | data that triggers   |
+| r | be authoritative     | without integrity    | unintended code      |
+| i | server-side*         | verification*        | execution*           |
+| t |                      |                      |                      |
+| y |                      |                      |                      |
+| * |                      |                      |                      |
+| * |                      |                      |                      |
++===+======================+======================+======================+
+| * |                      |                      |                      |
+| * |                      |                      |                      |
+| S |                      |                      |                      |
+| e |                      |                      |                      |
+| v |                      |                      |                      |
+| e |                      |                      |                      |
+| r |                      |                      |                      |
+| i |                      |                      |                      |
+| t |                      |                      |                      |
+| y |                      |                      |                      |
+| & |                      |                      |                      |
+| S |                      |                      |                      |
+| c |                      |                      |                      |
+| o |                      |                      |                      |
+| p |                      |                      |                      |
+| e |                      |                      |                      |
+| * |                      |                      |                      |
+| * |                      |                      |                      |
++---+----------------------+----------------------+----------------------+
+| * | **Entry-level**      | **High severity**    | **Highest severity** |
+| * |                      |                      |                      |
+| ▲ |                      |                      |                      |
+| I |                      |                      |                      |
+| n |                      |                      |                      |
+| c |                      |                      |                      |
+| r |                      |                      |                      |
+| e |                      |                      |                      |
+| a |                      |                      |                      |
+| s |                      |                      |                      |
+| i |                      |                      |                      |
+| n |                      |                      |                      |
+| g |                      |                      |                      |
+| S |                      |                      |                      |
+| e |                      |                      |                      |
+| v |                      |                      |                      |
+| e |                      |                      |                      |
+| r |                      |                      |                      |
+| i |                      |                      |                      |
+| t |                      |                      |                      |
+| y |                      |                      |                      |
+| ▲ |                      |                      |                      |
+| * |                      |                      |                      |
+| * |                      |                      |                      |
++---+----------------------+----------------------+----------------------+
+| * |                      |                      |                      |
+| * |                      |                      |                      |
+| D |                      |                      |                      |
+| e |                      |                      |                      |
+| f |                      |                      |                      |
+| i |                      |                      |                      |
+| n |                      |                      |                      |
+| i |                      |                      |                      |
+| t |                      |                      |                      |
+| i |                      |                      |                      |
+| o |                      |                      |                      |
+| n |                      |                      |                      |
+| * |                      |                      |                      |
+| * |                      |                      |                      |
++---+----------------------+----------------------+----------------------+
+|   | The application      | Software is          | Serialization        |
+|   | processes data that  | installed, updated,  | converts objects to  |
+|   | arrives from the     | or executed without  | a                    |
+|   | client (form fields, | verifying that it    | st                   |
+|   | URL parameters,      | has not been         | orable/transmittable |
+|   | hidden inputs, API   | tampered with        | format (JSON,        |
+|   | request bodies)      | between the point of | pickle, Java         |
+|   | without verifying    | creation and the     | serialization).      |
+|   | that it matches the  | point of execution.  | Deserialization      |
+|   | authoritative        | This covers CI/CD    | reconstructs them.   |
+|   | server-side value.   | pipeline poisoning,  | Insecure             |
+|   | The attacker         | malicious            | deserialization      |
+|   | modifies the value   | third-party          | occurs when an       |
+|   | in transit or in the | dependencies,        | application          |
+|   | browser before it is | auto-update          | deserializes data    |
+|   | sent.                | mechanisms without   | from an untrusted    |
+|   |                      | signature            | source --- and the   |
+|   |                      | verification, and    | deserialization      |
+|   |                      | deserialization of   | process itself can   |
+|   |                      | untrusted data that  | trigger code         |
+|   |                      | triggers code        | execution before any |
+|   |                      | execution.           | application-level    |
+|   |                      |                      | validation runs.     |
++---+----------------------+----------------------+----------------------+
+| * |                      |                      |                      |
+| * |                      |                      |                      |
+| W |                      |                      |                      |
+| o |                      |                      |                      |
+| r |                      |                      |                      |
+| k |                      |                      |                      |
+| e |                      |                      |                      |
+| d |                      |                      |                      |
+| E |                      |                      |                      |
+| x |                      |                      |                      |
+| a |                      |                      |                      |
+| m |                      |                      |                      |
+| p |                      |                      |                      |
+| l |                      |                      |                      |
+| e |                      |                      |                      |
+| * |                      |                      |                      |
+| * |                      |                      |                      |
++---+----------------------+----------------------+----------------------+
+|   | **Juice Shop: Price  | **SolarWinds         | **Python pickle      |
+|   | Manipulation**       | SUNBURST (2020)**    | Remote Code          |
+|   |                      |                      | Execution**          |
+|   | The order basket     | Attackers            |                      |
+|   | total is calculated  | compromised          | Python\'s pickle     |
+|   | client-side or read  | SolarWinds\' build   | module can execute   |
+|   | from a request body. | system and injected  | arbitrary code       |
+|   | By intercepting the  | malicious code into  | during               |
+|   | PUT                  | the Orion IT         | deserialization. Any |
+|   | /api/BasketItems/:id | monitoring software. | application that     |
+|   | request in ZAP and   | The tampered         | deserializes pickle  |
+|   | changing the         | software was         | data from user       |
+|   | quantity or unit     | digitally signed by  | input, a cookie, or  |
+|   | price, an attacker   | SolarWinds\'         | a network source is  |
+|   | can purchase items   | legitimate code      | vulnerable. The      |
+|   | for £0.01 or in      | signing certificate. | attacker crafts a    |
+|   | negative quantities. | 18,000 organisations | malicious pickle     |
+|   | The server applies   | --- including US     | payload that runs    |
+|   | whatever total it    | Treasury, US State   | os.system() during   |
+|   | receives without     | Department, and      | deserialization ---  |
+|   | checking it against  | multiple FTSE 100    | before the           |
+|   | the product          | companies ---        | application ever     |
+|   | catalogue.           | installed the        | validates the        |
+|   |                      | malicious update     | content.             |
+|   | **Juice Shop:**      | through normal       |                      |
+|   | *Juice Shop          | software update      | **Juice Shop:**      |
+|   | challenge:           | channels.            | *Juice Shop          |
+|   | \"Manipulate the     |                      | challenge: \"Perform |
+|   | basket to checkout   | **Juice Shop:**      | a Remote Code        |
+|   | with a negative      | *Juice Shop          | Execution that would |
+|   | total.\" Use ZAP to  | challenge: \"Forge a | put your system at   |
+|   | intercept and modify | coupon code that     | risk.\" Requires     |
+|   | the PUT              | gives you a 90%      | crafting a malicious |
+|   | /api/BasketItems/:id | discount.\" The      | object that triggers |
+|   | request body.*       | coupon validation    | execution when the   |
+|   |                      | uses a predictable   | application          |
+|   |                      | algorithm --- this   | processes it.*       |
+|   |                      | is a software        |                      |
+|   |                      | integrity failure    |                      |
+|   |                      | where the signing    |                      |
+|   |                      | mechanism can be     |                      |
+|   |                      | reversed.*           |                      |
++---+----------------------+----------------------+----------------------+
+| * |                      |                      |                      |
+| * |                      |                      |                      |
+| W |                      |                      |                      |
+| h |                      |                      |                      |
+| a |                      |                      |                      |
+| t |                      |                      |                      |
+| t |                      |                      |                      |
+| h |                      |                      |                      |
+| e |                      |                      |                      |
+| A |                      |                      |                      |
+| t |                      |                      |                      |
+| t |                      |                      |                      |
+| a |                      |                      |                      |
+| c |                      |                      |                      |
+| k |                      |                      |                      |
+| e |                      |                      |                      |
+| r |                      |                      |                      |
+| G |                      |                      |                      |
+| a |                      |                      |                      |
+| i |                      |                      |                      |
+| n |                      |                      |                      |
+| s |                      |                      |                      |
+| * |                      |                      |                      |
+| * |                      |                      |                      |
++---+----------------------+----------------------+----------------------+
+|   | **What the attacker  | **What the attacker  | **What the attacker  |
+|   | gains:**             | gains:**             | gains:**             |
+|   |                      |                      |                      |
+|   | Purchase any item at | Nation-state level:  | Remote code          |
+|   | any price, including | persistent,          | execution (RCE) ---  |
+|   | negative amounts     | undetected access to | the most severe web  |
+|   | that add credit to   | thousands of targets | application          |
+|   | the account.         | via legitimate       | vulnerability class. |
+|   | Transfer assets at   | software update      | The attacker gains   |
+|   | fraudulent values in | channels.            | OS-level command     |
+|   | financial systems.   | Developer-level: a   | execution on the     |
+|   | Manipulate game      | malicious npm/PyPI   | server without any   |
+|   | scores, loyalty      | package that         | authentication. In   |
+|   | points, or reward    | harvests environment | Java deserialization |
+|   | balances.            | variables (AWS keys, | attacks (Apache      |
+|   |                      | database             | Commons Collections  |
+|   |                      | credentials) from    | gadget chains), this |
+|   |                      | any CI pipeline that | has been exploited   |
+|   |                      | installs it.         | in Jenkins,          |
+|   |                      |                      | WebSphere, JBoss,    |
+|   |                      |                      | and many others.     |
++---+----------------------+----------------------+----------------------+
+| * |                      |                      |                      |
+| * |                      |                      |                      |
+| T |                      |                      |                      |
+| h |                      |                      |                      |
+| e |                      |                      |                      |
+| F |                      |                      |                      |
+| i |                      |                      |                      |
+| x |                      |                      |                      |
+| * |                      |                      |                      |
+| * |                      |                      |                      |
++---+----------------------+----------------------+----------------------+
+|   | **The fix:**         | **The fix:**         | **The fix:**         |
+|   |                      |                      |                      |
+|   | // NEVER trust       | \# Verify software   | \# NEVER deserialize |
+|   | price/total from the | integrity before     | pickle from          |
+|   | client:              | execution:           | untrusted sources:   |
+|   |                      |                      |                      |
+|   | item =               | \# 1. Pin            | \# import pickle     |
+|   | db.session.get(Item, | dependencies with    |                      |
+|   | item_id)             | hash verification:   | \# data =            |
+|   |                      |                      | pick                 |
+|   | total = item.price   | Flask==3.1.1         | le.loads(user_input) |
+|   | \* quantity \#       | \--ha                | ← NEVER              |
+|   | authoritative        | sh=sha256:5f873c\... |                      |
+|   |                      |                      | \# Use JSON for data |
+|   | \# Never: total =    | \# 2. Verify update  | exchange:            |
+|   | reque                | signatures:          |                      |
+|   | st.json\[\"price\"\] |                      | import json          |
+|   | \* qty               | gpg \--verify        |                      |
+|   |                      | update.sig           | data =               |
+|   | All authoritative    | update.tar.gz        | js                   |
+|   | values (prices,      |                      | on.loads(user_input) |
+|   | totals, scores,      | \# 3. Scan CI        | \# safe              |
+|   | balances, IDs that   | artefacts before     |                      |
+|   | determine privilege) | deployment:          | \# If you must       |
+|   | must be read from    |                      | deserialize objects: |
+|   | the server-side      | trivy image          |                      |
+|   | database on every    | myapp:latest         | \# Sign the          |
+|   | calculation. The     | \--exit-code 1       | serialized data with |
+|   | client may send      |                      | HMAC first           |
+|   | quantity and item ID | Sign all build       |                      |
+|   | --- nothing else.    | artefacts with a key | \# and verify before |
+|   |                      | held outside the     | deserialization.     |
+|   |                      | build pipeline.      |                      |
+|   |                      | Verify signatures    | Never deserialize    |
+|   |                      | before deployment.   | data from untrusted  |
+|   |                      | Use dependency hash  | sources using        |
+|   |                      | pinning              | pickle, Java         |
+|   |                      | (requirements.txt    | serialization, or    |
+|   |                      | \--hash). Implement  | similar mechanisms.  |
+|   |                      | Supply Chain Levels  | Use JSON,            |
+|   |                      | for Software         | MessagePack, or      |
+|   |                      | Artifacts (SLSA)     | Protocol Buffers for |
+|   |                      | framework controls.  | data exchange ---    |
+|   |                      | Audit CI/CD pipeline | these are data       |
+|   |                      | access as rigorously | formats, not code    |
+|   |                      | as production        | execution engines.   |
+|   |                      | access.              | If object            |
+|   |                      |                      | serialization is     |
+|   |                      |                      | required, sign the   |
+|   |                      |                      | payload with an HMAC |
+|   |                      |                      | using a server-side  |
+|   |                      |                      | secret and verify    |
+|   |                      |                      | the signature before |
+|   |                      |                      | deserialization.     |
++---+----------------------+----------------------+----------------------+
+
+  -----------------------------------------------------------------------
+  **The A08 Unifying Principle:** Integrity failures occur whenever code,
+  data, or infrastructure is **processed without verifying that it has
+  not been tampered with** between the point of creation and the point of
+  execution. **Always verify. Never assume.**
+
+  -----------------------------------------------------------------------

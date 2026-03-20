@@ -1,0 +1,295 @@
++-----------------------------------------------------------------------+
+| **Module 8 --- Security Log Quality Reference Card**                  |
+|                                                                       |
+| A09 Logging & Monitoring Failures \| What every security event must   |
+| contain --- and what it must never contain                            |
+|                                                                       |
+| *BBC Academy / JBI Training \| UK GDPR / DPA 2018 considerations      |
+| included*                                                             |
++-----------------------------------------------------------------------+
+
++-------------------+---+-----------------------+---+-------------------------+
+| **Every security  |   | **Before:             |   | **Never include in any  |
+| log event MUST    |   | Unstructured          |   | log:**                  |
+| include:**        |   | logging**             |   |                         |
+|                   |   |                       |   | +----+--------------+   |
+| <table>           |   | \# A developer adds a |   | | *  | **Why ---    |   |
+| <colgroup>        |   | print() statement:    |   | | *N | and What to  |   |
+| <col              |   |                       |   | | ev | Log          |   |
+| styl              |   | print(f\"Login        |   | | er | Instead**    |   |
+| e="width: 23%" /> |   | attempt for           |   | | L  |              |   |
+| <col              |   | {username}\")         |   | | og |              |   |
+| styl              |   |                       |   | | ** |              |   |
+| e="width: 76%" /> |   | \# Output in the      |   | +====+==============+   |
+| </colgroup>       |   | console:              |   | | *  | Even hashed. |   |
+| <thead>           |   |                       |   | | *P | A log        |   |
+| <tr               |   | Login attempt for     |   | | as | containing   |   |
+| class="header">   |   | admin                 |   | | sw | hashed       |   |
+| <th><strong>Fi    |   |                       |   | | or | passwords is |   |
+| eld</strong></th> |   | Login attempt for     |   | | ds | a credential |   |
+| <t                |   | admin                 |   | | ** | database.    |   |
+| h><strong>Example |   |                       |   | |    | Log the      |   |
+| &amp; Why It      |   | Login attempt for     |   | | pa | event        |   |
+| Matt              |   | alice                 |   | | ss | outcome ---  |   |
+| ers</strong></th> |   |                       |   | | wo | not the      |   |
+| </tr>             |   | *What a SOC analyst   |   | | rd | credential.  |   |
+| </thead>          |   | sees: nothing         |   | | =\ |              |   |
+| <tbody>           |   | actionable.*          |   | | "P |              |   |
+| <tr               |   |                       |   | | as |              |   |
+| class="odd">      |   | -   No timestamp ---  |   | | sw |              |   |
+| <td><strong>ev    |   |     cannot establish  |   | | 0r |              |   |
+| ent</strong></td> |   |     timeline          |   | | d! |              |   |
+| <td><p>"L         |   |                       |   | | \" |              |   |
+| OGIN_FAILURE"</p> |   | -   No outcome ---    |   | |    |              |   |
+| <p>Identifies     |   |     success and       |   | | *  |              |   |
+| what type of      |   |     failure look      |   | | *⚠ |              |   |
+| security-relevant |   |     identical         |   | | I  |              |   |
+| action occurred   |   |                       |   | | CO |              |   |
+| — enables SIEM    |   | -   No IP --- cannot  |   | | ri |              |   |
+| rules and         |   |     attribute or      |   | | sk |              |   |
+| alerting          |   |     block             |   | | ** |              |   |
+| thr               |   |                       |   | +----+--------------+   |
+| esholds.</p></td> |   | -   Not               |   | | ** | A stolen log |   |
+| </tr>             |   |     machine-parseable |   | | Fu | file becomes |   |
+| <tr               |   |     --- cannot feed a |   | | ll | a session    |   |
+| class="even">     |   |     SIEM              |   | | s  | hijack       |   |
+| <                 |   |                       |   | | es | toolkit. Log |   |
+| td><strong>timest |   | **After: Structured   |   | | si | a truncated  |   |
+| amp</strong></td> |   | security event        |   | | on | correlation  |   |
+| <td               |   | (JSON)**              |   | | to | ID instead   |   |
+| ><p>"2026-03-17T0 |   |                       |   | | ke | (first 8     |   |
+| 9:43:12.847Z"</p> |   | \# The Module 11      |   | | ns | chars only). |   |
+| <p>UTC always.    |   | Flask Supplement      |   | | ** |              |   |
+| Millisecond       |   | log_event() call:     |   | |    |              |   |
+| precision.        |   |                       |   | | se |              |   |
+| Required for      |   | log_eve               |   | | ss |              |   |
+| incident          |   | nt(\"LOGIN_FAILURE\", |   | | io |              |   |
+| timeline          |   | user_id,              |   | | n= |              |   |
+| reconstruction    |   |                       |   | | \" |              |   |
+| and ICO 72-hour   |   | request.remote_addr,  |   | | ey |              |   |
+| notification      |   | False)                |   | | Jh |              |   |
+| window.</p></td>  |   |                       |   | | bG |              |   |
+| </tr>             |   | \# Structured JSON    |   | | ci |              |   |
+| <tr               |   | output:               |   | | \. |              |   |
+| class="odd">      |   |                       |   | | .. |              |   |
+| <td><strong>user  |   | {\"timestamp\":\"20   |   | | \" |              |   |
+| _id</strong></td> |   | 26-03-17T09:43:12Z\", |   | +----+--------------+   |
+| <td><p>"usr_4829" |   |                       |   | | *  | PCI-DSS      |   |
+| (not              |   | \"event               |   | | *P | violation.   |   |
+| username)</p>     |   | \":\"LOGIN_FAILURE\", |   | | ay | Even partial |   |
+| <p>Immutable      |   |                       |   | | me | PANs beyond  |   |
+| identifier. A     |   | \"us                  |   | | nt | first 6 /    |   |
+| username can be   |   | er_id\":\"usr_4829\", |   | | ca | last 4       |   |
+| changed; a        |   |                       |   | | rd | digits are   |   |
+| user_id cannot.   |   | \"source_i            |   | | n  | prohibited.  |   |
+| Links the event   |   | p\":\"203.0.113.47\", |   | | um | Log the      |   |
+| to the account    |   |                       |   | | be | transaction  |   |
+| regardless of     |   | \"success\":false,    |   | | rs | ID only.     |   |
+| subsequent        |   |                       |   | | ** |              |   |
+| renames.</p></td> |   | \"correlation         |   | |    |              |   |
+| </tr>             |   | _id\":\"req_8f2a9c\"} |   | | c  |              |   |
+| <tr               |   |                       |   | | ar |              |   |
+| class="even">     |   | **What a SOC analyst  |   | | d= |              |   |
+| <                 |   | --- or a SIEM rule    |   | | \" |              |   |
+| td><strong>source |   | --- can do:**         |   | | 41 |              |   |
+| _ip</strong></td> |   |                       |   | | 11 |              |   |
+| <td><p>"          |   | -   Alert: 5+         |   | | 11 |              |   |
+| 203.0.113.47"</p> |   |     LOGIN_FAILURE     |   | | 11 |              |   |
+| <p>Enables        |   |     from same IP in   |   | | \. |              |   |
+| geolocation,      |   |     60s               |   | | .. |              |   |
+| threat            |   |                       |   | | \" |              |   |
+| intelligence      |   | -   Alert:            |   | |    |              |   |
+| lookups, and      |   |     LOGIN_SUCCESS     |   | | *  |              |   |
+| rate-limit        |   |     following         |   | | *⚠ |              |   |
+| evidence. Log     |   |     LOGIN_FAILURE     |   | | I  |              |   |
+| both client IP    |   |     burst             |   | | CO |              |   |
+| and any           |   |                       |   | | ri |              |   |
+| X-Forwarded-For   |   | -   Correlate: all    |   | | sk |              |   |
+| header.</p></td>  |   |     events for        |   | | ** |              |   |
+| </tr>             |   |     correlation_id    |   | +----+--------------+   |
+| <tr               |   |     across services   |   | | *  | Health,      |   |
+| class="odd">      |   |                       |   | | *S | religion,    |   |
+| <td><strong>act   |   | -   Report: ICO       |   | | pe | ethnicity,   |   |
+| ion</strong></td> |   |     breach            |   | | ci | sexual       |   |
+| <td><p>"          |   |     notification with |   | | al | orientation, |   |
+| authenticate"</p> |   |     precise           |   | | ca | political    |   |
+| <p>Distinguishes  |   |     timestamps        |   | | te | opinion. ICO |   |
+| login attempts    |   |                       |   | | go | has issued   |   |
+| from profile      |   |                       |   | | ry | enforcement  |   |
+| reads, admin      |   |                       |   | | da | notices for  |   |
+| access, data      |   |                       |   | | ta | logging      |   |
+| exports etc.      |   |                       |   | | (  | these. Log   |   |
+| Enables           |   |                       |   | | UK | the data     |   |
+| per-action        |   |                       |   | | GD | type         |   |
+| a                 |   |                       |   | | PR | accessed,    |   |
+| lerting.</p></td> |   |                       |   | | Ar | not the      |   |
+| </tr>             |   |                       |   | | t. | value.       |   |
+| <tr               |   |                       |   | | 9) |              |   |
+| class="even">     |   |                       |   | | ** |              |   |
+| <td><strong>outc  |   |                       |   | |    |              |   |
+| ome</strong></td> |   |                       |   | | h  |              |   |
+| <td><p>"success"  |   |                       |   | | ea |              |   |
+| | "failure"</p>   |   |                       |   | | lt |              |   |
+| <p>The most       |   |                       |   | | h_ |              |   |
+| critical field.   |   |                       |   | | co |              |   |
+| A LOGIN_SUCCESS   |   |                       |   | | nd |              |   |
+| after 50          |   |                       |   | | it |              |   |
+| LOGIN_FAILURE     |   |                       |   | | io |              |   |
+| events from the   |   |                       |   | | n= |              |   |
+| same IP is an     |   |                       |   | | \" |              |   |
+| almost certain    |   |                       |   | | di |              |   |
+| compromise        |   |                       |   | | ab |              |   |
+| in                |   |                       |   | | et |              |   |
+| dicator.</p></td> |   |                       |   | | es |              |   |
+| </tr>             |   |                       |   | | \" |              |   |
+| <tr               |   |                       |   | |    |              |   |
+| class="odd">      |   |                       |   | | *  |              |   |
+| <td><s            |   |                       |   | | *⚠ |              |   |
+| trong>correlation |   |                       |   | | I  |              |   |
+| _id</strong></td> |   |                       |   | | CO |              |   |
+| <td><p            |   |                       |   | | ri |              |   |
+| >"req_8f2a9c"</p> |   |                       |   | | sk |              |   |
+| <p>Links all      |   |                       |   | | ** |              |   |
+| log entries       |   |                       |   | +----+--------------+   |
+| from a single     |   |                       |   | | ** | High-value   |   |
+| HTTP request.     |   |                       |   | | Na | PII that     |   |
+| Without this,     |   |                       |   | | ti | enables      |   |
+| multi-step        |   |                       |   | | on | identity     |   |
+| attacks appear    |   |                       |   | | al | theft. Log   |   |
+| as isolated       |   |                       |   | | I  | that the     |   |
+| events.</p></td>  |   |                       |   | | ns | field was    |   |
+| </tr>             |   |                       |   | | ur | accessed --- |   |
+| <tr               |   |                       |   | | an | not the      |   |
+| class="even">     |   |                       |   | | ce | value.       |   |
+| <td><strong>resou |   |                       |   | | /  |              |   |
+| rce</strong></td> |   |                       |   | | N  |              |   |
+| <td><p>"/ap       |   |                       |   | | HS |              |   |
+| i/profile/42"</p> |   |                       |   | | n  |              |   |
+| <p>Identifies     |   |                       |   | | um |              |   |
+| what was          |   |                       |   | | be |              |   |
+| accessed or       |   |                       |   | | rs |              |   |
+| attempted.        |   |                       |   | | ** |              |   |
+| Essential for     |   |                       |   | |    |              |   |
+| IDOR and          |   |                       |   | | n  |              |   |
+| pri               |   |                       |   | | i_ |              |   |
+| vilege-escalation |   |                       |   | | nu |              |   |
+| investi           |   |                       |   | | mb |              |   |
+| gations.</p></td> |   |                       |   | | er |              |   |
+| </tr>             |   |                       |   | | =\ |              |   |
+| </tbody>          |   |                       |   | | "Q |              |   |
+| </table>          |   |                       |   | | Q1 |              |   |
+|                   |   |                       |   | | 23 |              |   |
+|                   |   |                       |   | | 45 |              |   |
+|                   |   |                       |   | | 6C |              |   |
+|                   |   |                       |   | | \" |              |   |
+|                   |   |                       |   | |    |              |   |
+|                   |   |                       |   | | *  |              |   |
+|                   |   |                       |   | | *⚠ |              |   |
+|                   |   |                       |   | | I  |              |   |
+|                   |   |                       |   | | CO |              |   |
+|                   |   |                       |   | | ri |              |   |
+|                   |   |                       |   | | sk |              |   |
+|                   |   |                       |   | | ** |              |   |
+|                   |   |                       |   | +----+--------------+   |
+|                   |   |                       |   | | ** | Bodies       |   |
+|                   |   |                       |   | | Fu | frequently   |   |
+|                   |   |                       |   | | ll | contain PII, |   |
+|                   |   |                       |   | | re | tokens, or   |   |
+|                   |   |                       |   | | qu | credentials  |   |
+|                   |   |                       |   | | es | submitted by |   |
+|                   |   |                       |   | | t/ | the user.    |   |
+|                   |   |                       |   | | re | Log the      |   |
+|                   |   |                       |   | | sp | endpoint and |   |
+|                   |   |                       |   | | on | method ---   |   |
+|                   |   |                       |   | | se | not the      |   |
+|                   |   |                       |   | | bo | body.        |   |
+|                   |   |                       |   | | di |              |   |
+|                   |   |                       |   | | es |              |   |
+|                   |   |                       |   | | ** |              |   |
+|                   |   |                       |   | |    |              |   |
+|                   |   |                       |   | | b  |              |   |
+|                   |   |                       |   | | od |              |   |
+|                   |   |                       |   | | y= |              |   |
+|                   |   |                       |   | | \" |              |   |
+|                   |   |                       |   | | {\ |              |   |
+|                   |   |                       |   | | "a |              |   |
+|                   |   |                       |   | | dd |              |   |
+|                   |   |                       |   | | re |              |   |
+|                   |   |                       |   | | ss |              |   |
+|                   |   |                       |   | | \" |              |   |
+|                   |   |                       |   | | :\ |              |   |
+|                   |   |                       |   | | "\ |              |   |
+|                   |   |                       |   | | .. |              |   |
+|                   |   |                       |   | | .\ |              |   |
+|                   |   |                       |   | | "} |              |   |
+|                   |   |                       |   | | \" |              |   |
+|                   |   |                       |   | +----+--------------+   |
+|                   |   |                       |   | | ** | Information  |   |
+|                   |   |                       |   | | In | disclosure.  |   |
+|                   |   |                       |   | | te | Stack traces |   |
+|                   |   |                       |   | | rn | reveal       |   |
+|                   |   |                       |   | | al | framework    |   |
+|                   |   |                       |   | | se | versions,    |   |
+|                   |   |                       |   | | rv | file paths,  |   |
+|                   |   |                       |   | | er | and table    |   |
+|                   |   |                       |   | | p  | names.       |   |
+|                   |   |                       |   | | at | Handle in    |   |
+|                   |   |                       |   | | hs | error        |   |
+|                   |   |                       |   | | or | handler ---  |   |
+|                   |   |                       |   | | s  | write to     |   |
+|                   |   |                       |   | | ta | internal log |   |
+|                   |   |                       |   | | ck | only, never  |   |
+|                   |   |                       |   | | tr | to the HTTP  |   |
+|                   |   |                       |   | | ac | response.    |   |
+|                   |   |                       |   | | es |              |   |
+|                   |   |                       |   | | ** |              |   |
+|                   |   |                       |   | |    |              |   |
+|                   |   |                       |   | | Fi |              |   |
+|                   |   |                       |   | | le |              |   |
+|                   |   |                       |   | | \" |              |   |
+|                   |   |                       |   | | /h |              |   |
+|                   |   |                       |   | | om |              |   |
+|                   |   |                       |   | | e/ |              |   |
+|                   |   |                       |   | | ub |              |   |
+|                   |   |                       |   | | un |              |   |
+|                   |   |                       |   | | tu |              |   |
+|                   |   |                       |   | | /a |              |   |
+|                   |   |                       |   | | pp |              |   |
+|                   |   |                       |   | | /m |              |   |
+|                   |   |                       |   | | od |              |   |
+|                   |   |                       |   | | el |              |   |
+|                   |   |                       |   | | s. |              |   |
+|                   |   |                       |   | | py |              |   |
+|                   |   |                       |   | | \" |              |   |
+|                   |   |                       |   | +----+--------------+   |
+|                   |   |                       |   |                         |
+|                   |   |                       |   | **ICO enforcement       |
+|                   |   |                       |   | note:** The Information |
+|                   |   |                       |   | Commissioner\'s Office  |
+|                   |   |                       |   | has issued enforcement  |
+|                   |   |                       |   | notices against         |
+|                   |   |                       |   | organisations that      |
+|                   |   |                       |   | logged personal data    |
+|                   |   |                       |   | inappropriately ---     |
+|                   |   |                       |   | including health data   |
+|                   |   |                       |   | written to application  |
+|                   |   |                       |   | logs during debugging.  |
+|                   |   |                       |   | Under UK GDPR, logging  |
+|                   |   |                       |   | personal data requires  |
+|                   |   |                       |   | a lawful basis, a       |
+|                   |   |                       |   | retention limit, and    |
+|                   |   |                       |   | appropriate access      |
+|                   |   |                       |   | controls. Security logs |
+|                   |   |                       |   | are not exempt.         |
++-------------------+---+-----------------------+---+-------------------------+
+
+  -----------------------------------------------------------------------
+  **Juice Shop connection:** Juice Shop\'s admin panel (/api/Feedbacks,
+  /api/Complaints) returns full user objects including email addresses in
+  its API responses --- demonstrating both Excessive Data Exposure and
+  the logging problem simultaneously. Run those requests through ZAP and
+  examine what personal data would appear in an unfiltered application
+  log. Then identify which fields from the left panel Juice Shop\'s own
+  logging captures for those events.
+
+  -----------------------------------------------------------------------

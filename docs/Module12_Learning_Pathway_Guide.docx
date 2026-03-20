@@ -1,0 +1,250 @@
++-----------------------------------------------------------------------+
+| **Post-Course Learning Pathway Guide**                                |
+|                                                                       |
+| Three tracks · Week 1 actions · 30-day milestones · 90-day goals      |
+|                                                                       |
+| *Module 12 \| BBC Academy / JBI Training \| Secure Web Application    |
+| Development*                                                          |
++-----------------------------------------------------------------------+
+
+  -----------------------------------------------------------------------
+  **Which track is right for you?** If you completed most practicals and
+  felt stretched --- start with Explorer. If you completed all practicals
+  including extension challenges and wanted more time --- start with
+  Practitioner. If you completed Expert track challenges and found them
+  straightforward --- Expert. You can move between tracks at any time.
+
+  -----------------------------------------------------------------------
+
++----------------------+----------------------+-----------------------+
+| **🔵 Explorer        | **🟡 Practitioner    | **🔴 Expert Track**   |
+| Track**              | Track**              |                       |
+|                      |                      | *Experienced          |
+| *Developers,         | *Developers and      | developers and        |
+| testers, and         | testers who          | security-focused      |
+| sysadmins who are    | completed most of    | engineers who         |
+| new to security and  | the course           | completed Expert      |
+| want to solidify the | practicals           | track challenges      |
+| foundations from     | confidently and want | during the course and |
+| this course with     | to move from         | want a structured     |
+| self-paced, guided   | vulnerability        | path toward           |
+| practice.*           | identification to    | professional-level    |
+|                      | systematic security  | offensive and         |
+|                      | testing and          | defensive security    |
+|                      | defensive coding at  | skills.*              |
+|                      | professional level.* |                       |
++----------------------+----------------------+-----------------------+
+| *Developers,         | *Developers and      | *Experienced          |
+| testers, and         | testers who          | developers and        |
+| sysadmins who are    | completed most of    | security-focused      |
+| new to security and  | the course           | engineers who         |
+| want to solidify the | practicals           | completed Expert      |
+| foundations from     | confidently and want | track challenges      |
+| this course with     | to move from         | during the course and |
+| self-paced, guided   | vulnerability        | want a structured     |
+| practice. No prior   | identification to    | path toward           |
+| security experience  | systematic security  | professional-level    |
+| beyond this course   | testing and          | offensive and         |
+| required.*           | defensive coding at  | defensive security    |
+|                      | professional level.* | skills.*              |
+| +-----------------+  |                      |                       |
+| | **Week 1 ---    |  | +-----------------+  | +------------------+  |
+| | First steps on  |  | | **Week 1 ---    |  | | **Week 1 ---     |  |
+| | PortSwigger Web |  | | Business Logic  |  | | TryHackMe &      |  |
+| | Security        |  | | & Advanced      |  | | Advanced         |  |
+| | Academy**       |  | | Labs**          |  | | PortSwigger**    |  |
+| |                 |  | |                 |  | |                  |  |
+| | -   Create a    |  | | -               |  | | -   TryHackMe:   |  |
+| |     free        |  | |    PortSwigger: |  | |     Complete the |  |
+| |     account at  |  | |     Business    |  | |     \"Advanced   |  |
+| |                 |  | |     Logic       |  | |     SQL          |  |
+| |   portswigger.n |  | |                 |  | |     Injection\"  |  |
+| | et/web-security |  | | Vulnerabilities |  | |     and \"SSRF\" |  |
+| |                 |  | |     learning    |  | |     rooms        |  |
+| | -   Complete:   |  | |     path (all   |  | |                  |  |
+| |     SQL         |  | |                 |  | | -   PortSwigger  |  |
+| |     injection → |  | |    practitioner |  | |     Research     |  |
+| |     Learning    |  | |     labs)       |  | |     Blog         |  |
+| |     path (first |  | |                 |  | |     (portswigge  |  |
+| |     3           |  | | -   This maps   |  | | r.net/research): |  |
+| |     apprentice  |  | |     directly to |  | |     read the     |  |
+| |     labs)       |  | |     Module 8\'s |  | |     \"HTTP       |  |
+| |                 |  | |     A04         |  | |     Request      |  |
+| | -   Complete:   |  | |     Insecure    |  | |     Smuggling\"  |  |
+| |     Cross-site  |  | |     Design      |  | |     research     |  |
+| |     scripting → |  | |     content --- |  | |     paper        |  |
+| |     Reflected   |  | |     the labs    |  | |                  |  |
+| |     XSS (first  |  | |     extend the  |  | | -   Attempt the  |  |
+| |     2 labs)     |  | |     theory      |  | |     Expert-level |  |
+| |                 |  | |                 |  | |     SSRF labs on |  |
+| | -   These labs  |  | | -   Also        |  | |     PortSwigger  |  |
+| |     directly    |  | |     complete:   |  | |                  |  |
+| |     extend the  |  | |     CSRF        |  | | -   Write a      |  |
+| |     Juice Shop  |  | |     learning    |  | |     one-page     |  |
+| |     SQLi and    |  | |     path        |  | |     threat model |  |
+| |     XSS         |  | |     (connects   |  | |     for a real   |  |
+| |     practicals  |  | |     to Module 9 |  | |     BBC endpoint |  |
+| |     you did     |  | |     SameSite    |  | |     using STRIDE |  |
+| |     today       |  | |     cookie flag |  | |                  |  |
+| |                 |  | |     discussion) |  | | -   Time needed: |  |
+| | -   Time        |  | |                 |  | |     4--5 hours   |  |
+| |     needed: \~2 |  | | -   Run Bandit  |  | +------------------+  |
+| |     hours       |  | |     against a   |  |                       |
+| +-----------------+  | |     real Python |  | +------------------+  |
+|                      | |     codebase    |  | | **30-Day         |  |
+| +-----------------+  | |     you own:    |  | | Milestone**      |  |
+| | **30-Day        |  | |     bandit -r . |  | |                  |  |
+| | Milestone**     |  | |     -ll         |  | | -   Complete     |  |
+| |                 |  | |                 |  | |     TryHackMe\'s |  |
+| | -   Complete    |  | | -   Time        |  | |     \"Jr         |  |
+| |     the         |  | |     needed: \~3 |  | |     Penetration  |  |
+| |     PortSwigger |  | |     hours for   |  | |     Tester\"     |  |
+| |     SQL         |  | |     labs + 1    |  | |     learning     |  |
+| |     injection   |  | |     hour for    |  | |     path         |  |
+| |     learning    |  | |     Bandit      |  | |                  |  |
+| |     path (all   |  | |     review      |  | | -   PortSwigger: |  |
+| |     apprentice  |  | +-----------------+  | |     attempt the  |  |
+| |     and         |  |                      | |     Expert-level |  |
+| |                 |  | +-----------------+  | |                  |  |
+| |    practitioner |  | | **30-Day        |  | |  Deserialization |  |
+| |     levels)     |  | | Milestone**     |  | |     and Web      |  |
+| |                 |  | |                 |  | |     Cache        |  |
+| | -   Complete    |  | | -   Complete    |  | |     Poisoning    |  |
+| |     the XSS     |  | |                 |  | |     labs         |  |
+| |     learning    |  | |    PortSwigger: |  | |                  |  |
+| |     path        |  | |     Advanced    |  | | -   Implement    |  |
+| |     through     |  | |     XSS,        |  | |     the Module 9 |  |
+| |     stored and  |  | |     Server-Side |  | |     RBAC pattern |  |
+| |     DOM-based   |  | |     Request     |  | |     with full    |  |
+| |     XSS         |  | |     Forgery,    |  | |     unit test    |  |
+| |                 |  | |     and XXE     |  | |     coverage on  |  |
+| | -   Read: OWASP |  | |     learning    |  | |     a real       |  |
+| |     Juice Shop  |  | |     paths       |  | |     project      |  |
+| |     companion   |  | |                 |  | |                  |  |
+| |     guide       |  | | -   Work        |  | | -   Write a      |  |
+| |     (pwning.ow  |  | |     through     |  | |     security     |  |
+| | asp-juice.shop) |  | |     Module 4\'s |  | |     regression   |  |
+| |     --- work    |  | |     vulnerabl   |  | |     test suite   |  |
+| |     through 5   |  | | e_shop_fixed.py |  | |     for the      |  |
+| |     challenges  |  | |     ---         |  | |     ShopCo app   |  |
+| |     you didn\'t |  | |     implement   |  | |     (Module 4    |  |
+| |     complete on |  | |     all 8 fixes |  | |     Extension    |  |
+| |     the course  |  | |     on a new    |  | |     Challenge    |  |
+| |                 |  | |     project     |  | |     X3)          |  |
+| | -   Run         |  | |                 |  | +------------------+  |
+| |     pip-audit   |  | | -   Set up a    |  |                       |
+| |     on one of   |  | |     pre-commit  |  | +------------------+  |
+| |     your own    |  | |     hook using  |  | | **90-Day Goal**  |  |
+| |     projects    |  | |     Bandit and  |  | |                  |  |
+| |     and triage  |  | |     gitleaks on |  | | -   PortSwigger  |  |
+| |     the         |  | |     your        |  | |     Web Security |  |
+| |     findings    |  | |     primary     |  | |     Expert       |  |
+| |     using the   |  | |     repository  |  | |                  |  |
+| |     Module 10   |  | |                 |  | |    certification |  |
+| |     CVE triage  |  | | -   Implement   |  | |     (exam-style  |  |
+| |     card        |  | |     structured  |  | |     challenges   |  |
+| +-----------------+  | |     security    |  | |     --- free)    |  |
+|                      | |     logging     |  | |                  |  |
+| +-----------------+  | |     (Module 8   |  | | -   OSCP         |  |
+| | **90-Day Goal** |  | |     Flask       |  | |     (Offensive   |  |
+| |                 |  | |     supplement  |  | |     Security     |  |
+| | -               |  | |     log_event() |  | |     Certified    |  |
+| |    PortSwigger: |  | |     pattern) in |  | |                  |  |
+| |     complete    |  | |     one         |  | |    Professional) |  |
+| |     the         |  | |     application |  | |     --- 90-day   |  |
+| |                 |  | +-----------------+  | |     lab          |  |
+| |  Authentication |  |                      | |     subscription |  |
+| |     learning    |  | +-----------------+  | |     is the       |  |
+| |     path        |  | | **90-Day Goal** |  | |     i            |  |
+| |                 |  | |                 |  | | ndustry-standard |  |
+| | -   Apply the   |  | | -               |  | |     entry point  |  |
+| |     Module 10   |  | |    PortSwigger: |  | |     for          |  |
+| |     hardening   |  | |     complete    |  | |     professional |  |
+| |     checklist   |  | |     the Web     |  | |     pen testing  |  |
+| |     to one      |  | |     Application |  | |                  |  |
+| |     production  |  | |     Penetration |  | | -   eWPT         |  |
+| |     or staging  |  | |     Testing     |  | |                  |  |
+| |     application |  | |     Methodology |  | |  (eLearnSecurity |  |
+| |                 |  | |     learning    |  | |     Web          |  |
+| | -   Share one   |  | |     path        |  | |     Application  |  |
+| |     finding     |  | |                 |  | |     Penetration  |  |
+| |     from the    |  | | -   Conduct a   |  | |     Tester) ---  |  |
+| |     checklist   |  | |                 |  | |                  |  |
+| |     review with |  | | self-assessment |  | |    web-specific, |  |
+| |     your team   |  | |     of one BBC  |  | |     highly       |  |
+| |                 |  | |     application |  | |     practical    |  |
+| | -   Start the   |  | |     using the   |  | |                  |  |
+| |     PortSwigger |  | |     Module 8    |  | | -   Deliver a    |  |
+| |     Access      |  | |     Five        |  | |     brown-bag    |  |
+| |     Control     |  | |     Questions   |  | |     session to   |  |
+| |     learning    |  | |     card for    |  | |     your team on |  |
+| |     path        |  | |     every       |  | |     one          |  |
+| +-----------------+  | |     endpoint    |  | |                  |  |
+|                      | |                 |  | |    vulnerability |  |
+| *Most useful         | | -   Propose or  |  | |     class from   |  |
+| supplementary        | |     join a      |  | |     this course  |  |
+| artefacts from this  | |     security    |  | |                  |  |
+| course: Module 6     | |     champions   |  | | -   Contribute a |  |
+| Injection Reference  | |     initiative  |  | |     security fix |  |
+| Card · Module 9      | |     within your |  | |     or test to   |  |
+| Session Lifecycle ·  | |     team        |  | |     an open      |  |
+| Module 10 Hardening  | |                 |  | |     source       |  |
+| Checklist*           | | -   Attempt     |  | |     project on   |  |
+|                      | |                 |  | |     GitHub       |  |
+|                      | |  PortSwigger\'s |  | +------------------+  |
+|                      | |     Web         |  |                       |
+|                      | |     Security    |  | *Most useful          |
+|                      | |     Expert      |  | supplementary         |
+|                      | |                 |  | artefacts from this   |
+|                      | |   certification |  | course: Flask         |
+|                      | |     challenges  |  | Security Supplement · |
+|                      | +-----------------+  | Module 7 Chain Attack |
+|                      |                      | Diagram · Module 10   |
+|                      | *Most useful         | OSINT Map · Module 11 |
+|                      | supplementary        | A08 Taxonomy*         |
+|                      | artefacts from this  |                       |
+|                      | course: Flask        |                       |
+|                      | Security Supplement  |                       |
+|                      | (all modules) ·      |                       |
+|                      | Module 8 A04 Five    |                       |
+|                      | Questions · Module 9 |                       |
+|                      | Access Control       |                       |
+|                      | Patterns · Module 11 |                       |
+|                      | A02 Crypto Card*     |                       |
++----------------------+----------------------+-----------------------+
+
+**Signposted Resources**
+
+  --------------------------------------------------------------------------------------------------------
+  **Resource**        **URL**                                            **Why it matters for this
+                                                                         course**
+  ------------------- -------------------------------------------------- ---------------------------------
+  **PortSwigger Web   portswigger.net/web-security                       Free, lab-based, structured. The
+  Security Academy**                                                     best single resource for all
+                                                                         three tracks.
+
+  **OWASP Juice Shop  pwning.owasp-juice.shop                            Official solutions and
+  Companion Guide**                                                      walkthroughs for all Juice Shop
+                                                                         challenges.
+
+  **OWASP Cheat Sheet cheatsheetseries.owasp.org                         Definitive developer reference
+  Series**                                                               for every OWASP category.
+                                                                         Bookmark the Authentication, SQL
+                                                                         Injection, and XSS cheat sheets
+                                                                         first.
+
+  **TryHackMe**       tryhackme.com                                      Guided rooms for hands-on
+                                                                         offensive practice. Start with
+                                                                         \"Jr Penetration Tester\"
+                                                                         learning path.
+
+  **CISA Known        cisa.gov/known-exploited-vulnerabilities-catalog   Authoritative list of
+  Exploited                                                              vulnerabilities actively
+  Vulnerabilities**                                                      exploited in the wild. Mandatory
+                                                                         patching reference for A06.
+
+  **NVD --- National  nvd.nist.gov                                       Authoritative CVE details
+  Vulnerability                                                          including CVSS vector strings.
+  Database**                                                             Use for A06 CVE triage (Module 10
+                                                                         card).
+  --------------------------------------------------------------------------------------------------------

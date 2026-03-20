@@ -1,0 +1,280 @@
++-----------------------------------------------------------------------+
+| **Module 9 --- Identity, Authentication & Authorisation**             |
+|                                                                       |
+| Three distinct concepts, three distinct attack surfaces, three        |
+| distinct defensive layers                                             |
+|                                                                       |
+| *A07 ID & Auth Failures \| A01 Broken Access Control \| BBC Academy / |
+| JBI Training*                                                         |
++-----------------------------------------------------------------------+
+
++---+---------------------+-------------+-----------------+-------------+
+|   | **Concept &         | **What the  | **Attack        | **Defensive |
+|   | Definition**        | Server Must | Vectors (flaw   | Controls**  |
+|   |                     | Establish** | refs from       |             |
+|   |                     |             | ShopCo / Juice  |             |
+|   |                     |             | Shop)**         |             |
++---+---------------------+-------------+-----------------+-------------+
+| * | **1. IDENTITY**     |             |                 |             |
+| * |                     |             |                 |             |
+| I | *\"Who claims to be |             |                 |             |
+| D | making this         |             |                 |             |
+| E | request?\"*         |             |                 |             |
+| N |                     |             |                 |             |
+| T |                     |             |                 |             |
+| I |                     |             |                 |             |
+| T |                     |             |                 |             |
+| Y |                     |             |                 |             |
+| * |                     |             |                 |             |
+| * |                     |             |                 |             |
++---+---------------------+-------------+-----------------+-------------+
+|   | Identity is the     | A unique,   | **Attack        | **Defensive |
+|   | claimed name or     | no          | vectors:**      | controls:** |
+|   | identifier a user   | n-guessable |                 |             |
+|   | presents to the     | identifier  | **▶** Spoofing  | **✓** Use   |
+|   | system --- before   | per user.   | --- claiming a  | immutable,  |
+|   | any verification    | Never       | different       | serve       |
+|   | has taken place. It | derived     | user\'s         | r-generated |
+|   | is an assertion,    | from        | identity by     | user_id --- |
+|   | not a proof. The    | us          | forging the     | never       |
+|   | server has no       | er-supplied | username or     | accept      |
+|   | grounds to trust it | input       | user_id in a    | identity    |
+|   | until               | alone. In   | request         | from        |
+|   | authentication      | practice: a | parameter       | client      |
+|   | succeeds.           | user_id     | **\[ShopCo Flaw | -controlled |
+|   |                     | from a      | 7 (IDOR)\]**    | parameters  |
+|   |                     | database    |                 |             |
+|   |                     | record, not | **▶** Username  | **✓**       |
+|   |                     | a username  | enumeration --- | Return      |
+|   |                     | or email    | probing login   | identical   |
+|   |                     | address     | error messages  | error       |
+|   |                     | that the    | to confirm      | messages    |
+|   |                     | user        | which           | whether the |
+|   |                     | controls.   | identities      | username    |
+|   |                     |             | exist in the    | exists or   |
+|   |                     |             | system          | not         |
+|   |                     |             | **\[Module 10   | (prevents   |
+|   |                     |             | OSINT\]**       | e           |
+|   |                     |             |                 | numeration) |
+|   |                     |             | **▶** Account   |             |
+|   |                     |             | impersonation   | **✓** Never |
+|   |                     |             | --- using a     | expose      |
+|   |                     |             | known           | sequential  |
+|   |                     |             | email/username  | or          |
+|   |                     |             | format to       | predictable |
+|   |                     |             | target specific | user IDs in |
+|   |                     |             | individuals     | URLs or API |
+|   |                     |             | **\[Juice Shop: | responses   |
+|   |                     |             | Login Admin\]** |             |
+|   |                     |             |                 | **✓** Log   |
+|   |                     |             |                 | every       |
+|   |                     |             |                 | identity    |
+|   |                     |             |                 | claim       |
+|   |                     |             |                 | attempt     |
+|   |                     |             |                 | with        |
+|   |                     |             |                 | timestamp,  |
+|   |                     |             |                 | source IP,  |
+|   |                     |             |                 | and outcome |
++---+---------------------+-------------+-----------------+-------------+
+| * | ***Identity must be |             |                 |             |
+| * | verified before a   |             |                 |             |
+| ▼ | session is created  |             |                 |             |
+| * | ▼ verification is   |             |                 |             |
+| * | Authentication***   |             |                 |             |
++---+---------------------+-------------+-----------------+-------------+
+| * | **2. AUTHENTICATION |             |                 |             |
+| * | (AuthN)**           |             |                 |             |
+| A |                     |             |                 |             |
+| U | *\"Can this         |             |                 |             |
+| T | identity prove it   |             |                 |             |
+| H | is who it claims to |             |                 |             |
+| N | be?\"*              |             |                 |             |
+| * |                     |             |                 |             |
+| * |                     |             |                 |             |
++---+---------------------+-------------+-----------------+-------------+
+|   | Authentication is   | A valid     | **Attack        | **Defensive |
+|   | the process of      | credential  | vectors:**      | controls:** |
+|   | verifying an        | bound to    |                 |             |
+|   | identity claim      | the claimed | **▶** Hash      | **✓**       |
+|   | using one or more   | identity: a | cracking        | bcrypt /    |
+|   | factors: something  | correctly   | (offline) ---   | scrypt /    |
+|   | you know            | hashed      | extract         | Argon2 with |
+|   | (password),         | password    | MD5/SHA1 hashes | work factor |
+|   | something you have  | match, a    | from DB, crack  | ≥12 ---     |
+|   | (TOTP device), or   | valid TOTP  | with HashCat +  | never MD5,  |
+|   | something you are   | code, a     | rockyou.txt in  | SHA1, or    |
+|   | (biometric). Only   | signed      | seconds         | unsalted    |
+|   | after successful    | assertion   | **\[ShopCo Flaw | hashes      |
+|   | authentication      | from a      | 3\]**           |             |
+|   | should a session    | trusted     |                 | **✓**       |
+|   | token be issued.    | IdP. The    | **▶**           | HttpOnly +  |
+|   |                     | credential  | Credential      | Secure +    |
+|   |                     | must be     | stuffing ---    | S           |
+|   |                     | verified    | replay breached | ameSite=Lax |
+|   |                     | server-side | us              | cookie      |
+|   |                     | --- never   | ername:password | flags ---   |
+|   |                     | in          | pairs at scale  | prevents JS |
+|   |                     | client-side | against the     | access and  |
+|   |                     | JavaScript. | login endpoint  | t           |
+|   |                     |             | **\[Juice Shop: | ransmission |
+|   |                     |             | Login with      | over HTTP   |
+|   |                     |             | breached        |             |
+|   |                     |             | credentials\]** | **✓**       |
+|   |                     |             |                 | Session     |
+|   |                     |             | **▶** Session   | secret from |
+|   |                     |             | forgery ---     | os.         |
+|   |                     |             | forge a valid   | urandom(32) |
+|   |                     |             | session cookie  | or          |
+|   |                     |             | using a known   | environment |
+|   |                     |             | or weak secret  | variable    |
+|   |                     |             | key **\[ShopCo  | --- never   |
+|   |                     |             | Flaw 1\]**      | hardcoded   |
+|   |                     |             |                 |             |
+|   |                     |             | **▶** Cookie    | **✓**       |
+|   |                     |             | stealing (via   | Regenerate  |
+|   |                     |             | XSS) --- inject | session ID  |
+|   |                     |             | script that     | on every    |
+|   |                     |             | reads           | privilege   |
+|   |                     |             | document.cookie | change      |
+|   |                     |             | and exfiltrates | (login,     |
+|   |                     |             | the session     | role        |
+|   |                     |             | token           | change,     |
+|   |                     |             | **\[Module 6 &  | logout)     |
+|   |                     |             | 7\]**           |             |
+|   |                     |             |                 | **✓** Rate  |
+|   |                     |             | **▶** JWT       | limiting:   |
+|   |                     |             | alg:none attack | max 5 login |
+|   |                     |             | --- remove the  | attempts    |
+|   |                     |             | signature from  | per IP per  |
+|   |                     |             | a JWT and set   | minute      |
+|   |                     |             | algorithm to    | (Fla        |
+|   |                     |             | \"none\"        | sk-Limiter) |
+|   |                     |             | **\[Flask       |             |
+|   |                     |             | Supplement      | **✓** MFA   |
+|   |                     |             | M6\]**          | for         |
+|   |                     |             |                 | privileged  |
+|   |                     |             |                 | accounts    |
+|   |                     |             |                 | --- TOTP or |
+|   |                     |             |                 | FIDO2       |
+|   |                     |             |                 | hardware    |
+|   |                     |             |                 | key         |
++---+---------------------+-------------+-----------------+-------------+
+| * | ***Authentication   |             |                 |             |
+| * | proves identity and |             |                 |             |
+| ▼ | issues a session    |             |                 |             |
+| * | token ▼ that token  |             |                 |             |
+| * | is then used for    |             |                 |             |
+|   | Authorisation***    |             |                 |             |
++---+---------------------+-------------+-----------------+-------------+
+| * | **3. AUTHORISATION  |             |                 |             |
+| * | (AuthZ)**           |             |                 |             |
+| A |                     |             |                 |             |
+| U | *\"Is this          |             |                 |             |
+| T | authenticated       |             |                 |             |
+| H | identity permitted  |             |                 |             |
+| Z | to perform this     |             |                 |             |
+| * | action on this      |             |                 |             |
+| * | resource?\"*        |             |                 |             |
++---+---------------------+-------------+-----------------+-------------+
+|   | Authorisation       | A verified  | **Attack        | **Defensive |
+|   | happens after       | mapping     | vectors:**      | controls:** |
+|   | authentication. It  | between the |                 |             |
+|   | is the decision     | au          | **▶** IDOR ---  | **✓** Check |
+|   | about what an       | thenticated | authenticated   | au          |
+|   | authenticated user  | user\'s     | user changes a  | thorisation |
+|   | is permitted to do. | identity    | resource ID in  | server-side |
+|   | Authentication asks | and the     | the URL to      | on every    |
+|   | \"are you who you   | permissions | access another  | request --- |
+|   | say you are?\" ---  | granted to  | user\'s data    | client-side |
+|   | Authorisation asks  | that        | **\[ShopCo Flaw | hiding is   |
+|   | \"are you allowed   | identity.   | 7 / Juice Shop: | not a       |
+|   | to do this?\" They  | The server  | View Basket\]** | control     |
+|   | are entirely        | must check: |                 |             |
+|   | separate checks and | (1) is the  | **▶** Privilege | **✓** Deny  |
+|   | must both be        | user        | escalation ---  | by default: |
+|   | enforced            | aut         | forging or      | if no       |
+|   | server-side on      | henticated? | manipulating a  | explicit    |
+|   | every request.      | (2) does    | role/permission | permission  |
+|   |                     | their       | token to gain   | is granted, |
+|   |                     | rol         | higher access   | the action  |
+|   |                     | e/attribute | **\[ShopCo Flaw | is denied   |
+|   |                     | permit this | 5\]**           |             |
+|   |                     | action on   |                 | **✓**       |
+|   |                     | this        | **▶** Missing   | Res         |
+|   |                     | specific    | function-level  | ource-level |
+|   |                     | resource?   | access control  | checks: if  |
+|   |                     | Both checks | --- admin       | user.id !=  |
+|   |                     | must pass   | endpoints not   | resour      |
+|   |                     | ---         | protected       | ce.owner_id |
+|   |                     | \"auth      | because \"users | and not     |
+|   |                     | enticated\" | won\'t find     | admin → 403 |
+|   |                     | is not the  | them\"          | Forbidden   |
+|   |                     | same as     | **\[ShopCo Flaw |             |
+|   |                     | \"au        | 6 / Juice Shop: | **✓**       |
+|   |                     | thorised\". | Admin Panel\]** | \@log       |
+|   |                     |             |                 | in_required |
+|   |                     |             | **▶** Forced    | on every    |
+|   |                     |             | browsing ---    | protected   |
+|   |                     |             | directly        | route ---   |
+|   |                     |             | navigating to   | never rely  |
+|   |                     |             | URLs that the   | on          |
+|   |                     |             | UI doesn\'t     | obscurity   |
+|   |                     |             | link to but the |             |
+|   |                     |             | server doesn\'t | **✓**       |
+|   |                     |             | protect         | Principle   |
+|   |                     |             | **\[Juice Shop: | of Least    |
+|   |                     |             | Confidential    | Privilege:  |
+|   |                     |             | Document\]**    | grant only  |
+|   |                     |             |                 | the minimum |
+|   |                     |             |                 | permissions |
+|   |                     |             |                 | needed for  |
+|   |                     |             |                 | the role    |
+|   |                     |             |                 |             |
+|   |                     |             |                 | **✓** RBAC  |
+|   |                     |             |                 | or ABAC     |
+|   |                     |             |                 | implemented |
+|   |                     |             |                 | server-side |
+|   |                     |             |                 | --- roles   |
+|   |                     |             |                 | stored in   |
+|   |                     |             |                 | DB, never   |
+|   |                     |             |                 | in session  |
+|   |                     |             |                 | cookie      |
++---+---------------------+-------------+-----------------+-------------+
+
+**The Three Most Common Confusions --- All of Which Cause Real
+Breaches**
+
++----------------------+----------------------+-----------------------+
+| **Common Confusion   | **Common Confusion   | **Common Confusion    |
+| 1**                  | 2**                  | 3**                   |
++----------------------+----------------------+-----------------------+
+| **\"Logged in means  | **\"HTTPS means the  | **\"The UI doesn\'t   |
+| authorised.\"**      | session is           | show it, so users     |
+|                      | secure.\"**          | can\'t access it.\"** |
+| Being authenticated  |                      |                       |
+| proves identity. It  | HTTPS protects the   | Security through      |
+| says nothing about   | token in transit. It | obscurity is not      |
+| what resources or    | does not protect a   | authorisation. Any    |
+| actions are          | token with no        | URL or API endpoint   |
+| permitted. Every     | HttpOnly flag        | reachable by HTTP     |
+| resource access      | (stealable by XSS),  | must enforce its own  |
+| requires a separate  | a weak session       | authorisation check   |
+| authorisation check  | secret (forgeable),  | server-side,          |
+| --- even for         | or a missing expiry  | regardless of whether |
+| authenticated users. | (persistent after    | the UI links to it.   |
+|                      | logout). Transport   | Juice Shop\'s         |
+|                      | and session security | /administration panel |
+|                      | are separate         | is a live             |
+|                      | concerns.            | demonstration of this |
+|                      |                      | failure.              |
++----------------------+----------------------+-----------------------+
+
+  -----------------------------------------------------------------------
+  **The test:** for any endpoint in your application, can you answer all
+  three questions independently? **(1) How does the server know who this
+  is? (2) How does the server verify they are who they claim? (3) How
+  does the server decide whether this identity is permitted to perform
+  this action on this specific resource? If any answer is \"it trusts the
+  client\" --- that is the vulnerability.**
+
+  -----------------------------------------------------------------------

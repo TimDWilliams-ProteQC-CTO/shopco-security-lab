@@ -1,0 +1,382 @@
++-----------------------------------------------------------------------+
+| **Module 10 --- A06 CVE Triage Reference Card**                       |
+|                                                                       |
+| How to read a CVSS score · How to decode a CVSS vector · How to make  |
+| a patching decision                                                   |
+|                                                                       |
+| *A06 Vulnerable & Outdated Components \| BBC Academy / JBI Training   |
+| \| Use alongside pip-audit output*                                    |
++-----------------------------------------------------------------------+
+
+**CVSS Severity Bands --- What Each Score Demands**
+
+  -----------------------------------------------------------------------------------------------------------
+  **Score**       **Severity**        **Required Action**      **Real-World Example**         **Timescale**
+  --------------- ------------------- ------------------------ ------------------------------ ---------------
+  **9.0--10.0**   **CRITICAL**        Patch or mitigate within Log4Shell (CVE-2021-44228) --- **24--72 hrs**
+                                      24--72 hours. If no      CVSS 10.0. Remote code         
+                                      patch exists: isolate    execution with no              
+                                      the component, disable   authentication required. Every 
+                                      the feature, or take the Java application using log4j   
+                                      service offline.         2.x was affected. Patches were 
+                                      Escalate immediately to  available within 24 hours;     
+                                      security and engineering exploitation was active within 
+                                      leads. Do not wait for a 12.                            
+                                      scheduled release cycle.                                
+
+  **7.0--8.9**    **HIGH**            Patch within the next    Werkzeug 0.14.1 CVE-2023-25577 **1--2 weeks**
+                                      planned release cycle    --- CVSS 7.5. Multipart form   
+                                      --- typically within     parsing allows an attacker to  
+                                      1--2 weeks for           consume excessive memory by    
+                                      production systems. If   sending a malformed multipart  
+                                      exploitation evidence    boundary. No auth required;    
+                                      exists in the wild       network-accessible. Present in 
+                                      (check CISA KEV          requirements_vulnerable.txt.   
+                                      catalogue), treat as                                    
+                                      CRITICAL. Document the                                  
+                                      decision and residual                                   
+                                      risk.                                                   
+
+  **4.0--6.9**    **MEDIUM**          Patch in the next        Flask 1.0.0 CVE-2023-30861 --- **Next
+                                      regular maintenance      CVSS 7.5 (misclassified as     maintenance
+                                      window --- typically     Medium in some databases).     window**
+                                      monthly. Assess whether  Session persistence after      
+                                      your deployment is       logout when using server-side  
+                                      actually exploitable     sessions. Exploitable only     
+                                      using the CVSS vector    when using the legacy session  
+                                      analysis below. A MEDIUM interface. Check your code     
+                                      score may be CRITICAL in before dismissing.             
+                                      your specific context or                                
+                                      negligible depending on                                 
+                                      whether the attack                                      
+                                      vector is reachable.                                    
+
+  **0.1--3.9**    **LOW**             Schedule for patching    Python package with a          **Within the
+                                      within the quarter.      low-severity advisory          quarter**
+                                      Acceptable to defer if   requiring local file system    
+                                      the vulnerability        access that your application   
+                                      requires local access,   container does not have. May   
+                                      physical access, or user be legitimate to accept with   
+                                      interaction that your    documented rationale --- but   
+                                      threat model makes       the rationale must be explicit 
+                                      unlikely. Document the   and reviewed periodically.     
+                                      risk acceptance decision                                
+                                      with a named owner and                                  
+                                      review date.                                            
+
+  **0.0**         **INFORMATIONAL**   Review at next           Deprecation notice for a       **Next review
+                                      opportunity. These are   cryptographic algorithm that   cycle**
+                                      typically advisory       is not currently exploitable   
+                                      notices, deprecated      but will be removed from       
+                                      feature warnings, or     future library versions. No    
+                                      configuration            immediate risk, but update     
+                                      recommendations without  before the version that        
+                                      a direct exploit path.   removes it is released.        
+                                      Still worth tracking ---                                
+                                      informational advisories                                
+                                      often precede                                           
+                                      higher-severity findings                                
+                                      when combined with other                                
+                                      issues.                                                 
+  -----------------------------------------------------------------------------------------------------------
+
++--------------------------------------+-------------------------------+
+| **CVSS Vector Component Decoder**    | **Worked Example: Werkzeug    |
+|                                      | 0.14.1**                      |
+| +---+------+----------------------+  |                               |
+| | * | **C  | **Possible Values    |  | **CVE-2023-25577 \| CVSS Base |
+| | * | ompo | --- what each        |  | Score: 7.5**                  |
+| | C | nent | means**              |  |                               |
+| | o | &    |                      |  | CVSS:3.1/AV:N/A               |
+| | d | Key  |                      |  | C:L/PR:N/UI:N/S:U/C:N/I:N/A:H |
+| | e | Qu   |                      |  |                               |
+| | * | esti |                      |  | **Reading the vector:**       |
+| | * | on** |                      |  |                               |
+| +===+======+======================+  | **AV:N** → Network ---        |
+| | * | **At | **N=Network:**       |  | exploitable over the internet |
+| | * | tack | Exploitable remotely |  |                               |
+| | A | Vect | over the internet    |  | **AC:L** → Low complexity --- |
+| | V | or** | --- highest risk.    |  | no special conditions needed  |
+| | * |      |                      |  |                               |
+| | * | *Can | **A=Adjacent:**      |  | **PR:N** → No privileges ---  |
+| |   | this | Requires access to   |  | unauthenticated attacker      |
+| |   | be   | the same network     |  |                               |
+| |   | e    | segment.             |  | **UI:N** → No user            |
+| |   | xplo |                      |  | interaction --- server-side   |
+| |   | ited | **L=Local:**         |  |                               |
+| |   | over | Requires local OS    |  | **S:U** → Unchanged ---       |
+| |   | the  | access.              |  | impact limited to Werkzeug    |
+| |   | inte |                      |  | process                       |
+| |   | rnet | **P=Physical:**      |  |                               |
+| |   | wit  | Requires physical    |  | **C:N** → No confidentiality  |
+| |   | hout | access to the        |  | impact                        |
+| |   | any  | device.              |  |                               |
+| |   | net  |                      |  | **I:N** → No integrity impact |
+| |   | work |                      |  |                               |
+| |   | acce |                      |  | **A:H** → High availability   |
+| |   | ss?* |                      |  | impact --- service crashes    |
+| +---+------+----------------------+  |                               |
+| | * | **At | **L=Low:** No        |  | **Context questions for your  |
+| | * | tack | special conditions   |  | deployment:**                 |
+| | A | Comp | required --- attack  |  |                               |
+| | C | lexi | can be repeated      |  | -   Is Werkzeug directly      |
+| | * | ty** | reliably.            |  |     internet-accessible, or   |
+| | * |      |                      |  |     behind a reverse proxy    |
+| |   | *    | **H=High:** Specific |  |     (nginx/Cloudflare)?       |
+| |   | Does | conditions must      |  |                               |
+| |   | this | exist (race          |  | -   Does your application     |
+| |   | req  | condition, unusual   |  |     accept multipart form     |
+| |   | uire | config).             |  |     data? (If not, the attack |
+| |   | spec |                      |  |     vector may not be         |
+| |   | ific |                      |  |     reachable.)               |
+| |   | co   |                      |  |                               |
+| |   | ndit |                      |  | -   What is the business      |
+| |   | ions |                      |  |     impact of your Werkzeug   |
+| |   | that |                      |  |     process crashing? (High   |
+| |   | may  |                      |  |     for a critical API; lower |
+| |   | not  |                      |  |     for a batch job.)         |
+| |   | e    |                      |  |                               |
+| |   | xist |                      |  | **Triage decision:**          |
+| |   | in   |                      |  |                               |
+| |   | your |                      |  | AV:N/PR:N = HIGH urgency.     |
+| |   | depl |                      |  | Even with a reverse proxy, a  |
+| |   | oyme |                      |  | malformed multipart request   |
+| |   | nt?* |                      |  | may pass through. Patch to    |
+| +---+------+----------------------+  | Werkzeug ≥ 2.3.3 within 1--2  |
+| | * | **Pr | **N=None:** No       |  | weeks. If patching is blocked |
+| | * | ivil | authentication       |  | by a dependency conflict, add |
+| | P | eges | required ---         |  | request size limits at the    |
+| | R | Re   | unauthenticated      |  | reverse proxy layer as a      |
+| | * | quir | attacker.            |  | temporary mitigation.         |
+| | * | ed** |                      |  | Document the decision.        |
+| |   |      | **L=Low:** Requires  |  |                               |
+| |   | *    | a standard user      |  |                               |
+| |   | Does | account.             |  |                               |
+| |   | your |                      |  |                               |
+| |   | app  | **H=High:** Requires |  |                               |
+| |   | lica | an admin or          |  |                               |
+| |   | tion | privileged account.  |  |                               |
+| |   | req  |                      |  |                               |
+| |   | uire |                      |  |                               |
+| |   | au   |                      |  |                               |
+| |   | then |                      |  |                               |
+| |   | tica |                      |  |                               |
+| |   | tion |                      |  |                               |
+| |   | be   |                      |  |                               |
+| |   | fore |                      |  |                               |
+| |   | this |                      |  |                               |
+| |   | c    |                      |  |                               |
+| |   | ompo |                      |  |                               |
+| |   | nent |                      |  |                               |
+| |   | is   |                      |  |                               |
+| |   | rea  |                      |  |                               |
+| |   | chab |                      |  |                               |
+| |   | le?* |                      |  |                               |
+| +---+------+----------------------+  |                               |
+| | * | **   | **N=None:** No user  |  |                               |
+| | * | User | action required ---  |  |                               |
+| | U | I    | server-side          |  |                               |
+| | I | nter | exploitation.        |  |                               |
+| | * | acti |                      |  |                               |
+| | * | on** | **R=Required:** A    |  |                               |
+| |   |      | user must click a    |  |                               |
+| |   | *    | link, open a file,   |  |                               |
+| |   | Does | or take an action.   |  |                               |
+| |   | expl |                      |  |                               |
+| |   | oita |                      |  |                               |
+| |   | tion |                      |  |                               |
+| |   | req  |                      |  |                               |
+| |   | uire |                      |  |                               |
+| |   | a    |                      |  |                               |
+| |   | user |                      |  |                               |
+| |   | to   |                      |  |                               |
+| |   | per  |                      |  |                               |
+| |   | form |                      |  |                               |
+| |   | an   |                      |  |                               |
+| |   | act  |                      |  |                               |
+| |   | ion? |                      |  |                               |
+| |   | How  |                      |  |                               |
+| |   | li   |                      |  |                               |
+| |   | kely |                      |  |                               |
+| |   | is   |                      |  |                               |
+| |   | that |                      |  |                               |
+| |   | in   |                      |  |                               |
+| |   | your |                      |  |                               |
+| |   | user |                      |  |                               |
+| |   | ba   |                      |  |                               |
+| |   | se?* |                      |  |                               |
+| +---+------+----------------------+  |                               |
+| | * | *    | **C=Changed:**       |  |                               |
+| | * | *Sco | Compromise can       |  |                               |
+| | S | pe** | extend beyond the    |  |                               |
+| | * |      | vulnerable           |  |                               |
+| | * | *Can | component.           |  |                               |
+| |   | this |                      |  |                               |
+| |   | v    | **U=Unchanged:**     |  |                               |
+| |   | ulne | Impact is limited to |  |                               |
+| |   | rabi | the vulnerable       |  |                               |
+| |   | lity | component only.      |  |                               |
+| |   | be   |                      |  |                               |
+| |   | used |                      |  |                               |
+| |   | to   |                      |  |                               |
+| |   | p    |                      |  |                               |
+| |   | ivot |                      |  |                               |
+| |   | to   |                      |  |                               |
+| |   | o    |                      |  |                               |
+| |   | ther |                      |  |                               |
+| |   | sys  |                      |  |                               |
+| |   | tems |                      |  |                               |
+| |   | or   |                      |  |                               |
+| |   | comp |                      |  |                               |
+| |   | onen |                      |  |                               |
+| |   | ts?* |                      |  |                               |
+| +---+------+----------------------+  |                               |
+| | * | *    | **H=High:** Complete |  |                               |
+| | * | *Con | loss of              |  |                               |
+| | C | fide | confidentiality ---  |  |                               |
+| | * | ntia | all data potentially |  |                               |
+| | * | lity | exposed.             |  |                               |
+| |   | Impa |                      |  |                               |
+| |   | ct** | **L=Low:** Some data |  |                               |
+| |   |      | exposed but limited  |  |                               |
+| |   | *    | in scope.            |  |                               |
+| |   | What |                      |  |                               |
+| |   | data | **N=None:** No       |  |                               |
+| |   | c    | confidentiality      |  |                               |
+| |   | ould | impact.              |  |                               |
+| |   | be   |                      |  |                               |
+| |   | di   |                      |  |                               |
+| |   | sclo |                      |  |                               |
+| |   | sed? |                      |  |                               |
+| |   | Is   |                      |  |                               |
+| |   | that |                      |  |                               |
+| |   | data |                      |  |                               |
+| |   | cla  |                      |  |                               |
+| |   | ssif |                      |  |                               |
+| |   | ied, |                      |  |                               |
+| |   | p    |                      |  |                               |
+| |   | erso |                      |  |                               |
+| |   | nal, |                      |  |                               |
+| |   | or   |                      |  |                               |
+| |   | comm |                      |  |                               |
+| |   | erci |                      |  |                               |
+| |   | ally |                      |  |                               |
+| |   | sen  |                      |  |                               |
+| |   | siti |                      |  |                               |
+| |   | ve?* |                      |  |                               |
+| +---+------+----------------------+  |                               |
+| | * | **I  | **H=High:** Complete |  |                               |
+| | * | nteg | loss of integrity    |  |                               |
+| | I | rity | --- attacker can     |  |                               |
+| | * | Impa | modify any data.     |  |                               |
+| | * | ct** |                      |  |                               |
+| |   |      | **L=Low:** Some data |  |                               |
+| |   | *Can | can be modified.     |  |                               |
+| |   | an   |                      |  |                               |
+| |   | atta | **N=None:** No       |  |                               |
+| |   | cker | integrity impact.    |  |                               |
+| |   | mo   |                      |  |                               |
+| |   | dify |                      |  |                               |
+| |   | data |                      |  |                               |
+| |   | in   |                      |  |                               |
+| |   | your |                      |  |                               |
+| |   | app  |                      |  |                               |
+| |   | lica |                      |  |                               |
+| |   | tion |                      |  |                               |
+| |   | or   |                      |  |                               |
+| |   | da   |                      |  |                               |
+| |   | taba |                      |  |                               |
+| |   | se?* |                      |  |                               |
+| +---+------+----------------------+  |                               |
+| | * | **   | **H=High:** Service  |  |                               |
+| | * | Avai | completely           |  |                               |
+| | A | labi | unavailable ---      |  |                               |
+| | * | lity | total DoS.           |  |                               |
+| | * | Impa |                      |  |                               |
+| |   | ct** | **L=Low:** Reduced   |  |                               |
+| |   |      | performance or       |  |                               |
+| |   | *C   | intermittent         |  |                               |
+| |   | ould | availability.        |  |                               |
+| |   | this |                      |  |                               |
+| |   | c    | **N=None:** No       |  |                               |
+| |   | rash | availability impact. |  |                               |
+| |   | your |                      |  |                               |
+| |   | ser  |                      |  |                               |
+| |   | vice |                      |  |                               |
+| |   | or   |                      |  |                               |
+| |   | make |                      |  |                               |
+| |   | it   |                      |  |                               |
+| |   | unav |                      |  |                               |
+| |   | aila |                      |  |                               |
+| |   | ble? |                      |  |                               |
+| |   | What |                      |  |                               |
+| |   | is   |                      |  |                               |
+| |   | the  |                      |  |                               |
+| |   | busi |                      |  |                               |
+| |   | ness |                      |  |                               |
+| |   | im   |                      |  |                               |
+| |   | pact |                      |  |                               |
+| |   | of   |                      |  |                               |
+| |   | do   |                      |  |                               |
+| |   | wnti |                      |  |                               |
+| |   | me?* |                      |  |                               |
+| +---+------+----------------------+  |                               |
++--------------------------------------+-------------------------------+
+
+**Three-Step Triage Process**
+
++----------------------+----------------------+-----------------------+
+| **Step 1 --- Assess  | **Step 2 --- Check   | **Step 3 --- Decide   |
+| Exploitability in    | Fix Availability**   | and Document**        |
+| Your Context**       |                      |                       |
++----------------------+----------------------+-----------------------+
+| **Read the CVSS      | **Check these        | **Every vulnerability |
+| vector --- do not    | sources in order:**  | decision must have a  |
+| rely on the score    |                      | named owner and a     |
+| alone.**             | 1.  pip-audit -r     | written rationale:**  |
+|                      |     requirements.txt |                       |
+| -   Is AV:N? Is your |     --- lists fix    | -   Patch: record the |
+|     component        |     versions         |     version patched   |
+|                      |                      |     to, the date, and |
+|  internet-reachable? | 2.  PyPI changelog   |     the PR/ticket     |
+|                      |     for the package  |     reference.        |
+| -   Is PR:N? Does    |     --- \"Security\" |                       |
+|     exploitation     |     or \"CVE\"       | -   Mitigate:         |
+|     require no       |     entries          |     describe the      |
+|     authentication?  |                      |     compensating      |
+|                      | 3.  NVD entry:       |     control, its      |
+| -   Is AC:L? Are     |                      |     effectiveness,    |
+|     conditions       |  nvd.nist.gov/vuln/d |     and when it will  |
+|     reliably         | etail/CVE-XXXX-XXXXX |     be removed.       |
+|     achievable?      |                      |                       |
+|                      | 4.  CISA KEV         | -   Accept: state why |
+| -   Does the         |     catalogue:       |     the risk is       |
+|     vulnerable code  |     known-explo      |     acceptable in     |
+|     path actually    | ited-vulnerabilities |     this context, who |
+|     execute in your  |     --- if listed,   |     approved it, and  |
+|     app?             |     treat as         |     when the decision |
+|                      |     CRITICAL         |     will be reviewed. |
+| *A CVSS 9.0 with     |     regardless of    |                       |
+| AV:L (local access   |     score            | **\"We know about     |
+| required) may be     |                      | it\" is not risk      |
+| less urgent than a   | *If no fix exists:   | acceptance.** *Risk   |
+| CVSS 7.5 with AV:N   | document the         | acceptance requires   |
+| in a specific        | vulnerability,       | an explicit decision  |
+| deployment. Context  | implement a          | by a named person     |
+| always overrides the | compensating control | with authority to     |
+| raw score.*          | (WAF rule, input     | accept that risk.*    |
+|                      | validation, feature  |                       |
+|                      | disable), and set a  |                       |
+|                      | review date.*        |                       |
++----------------------+----------------------+-----------------------+
+
+  -----------------------------------------------------------------------
+  **pip-audit connection:** Run pip-audit -r requirements_vulnerable.txt
+  on your VM. For each HIGH or CRITICAL finding, apply the three-step
+  triage above: read the CVSS vector for the CVE on nvd.nist.gov, assess
+  exploitability in a typical Flask deployment, identify the fix version
+  in the pip-audit output. Which findings in requirements_vulnerable.txt
+  are exploitable with AV:N/PR:N --- and which require conditions your
+  application does not have?
+
+  -----------------------------------------------------------------------

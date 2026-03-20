@@ -1,0 +1,232 @@
++-----------------------------------------------------------------------+
+| **Module 9 --- Access Control Design Patterns**                       |
+|                                                                       |
+| RBAC \| ABAC \| Least Privilege --- with Flask implementation         |
+| examples and BBC scenarios                                            |
+|                                                                       |
+| *A01 Broken Access Control \| BBC Academy / JBI Training*             |
++-----------------------------------------------------------------------+
+
++----------------------+---+----------------------+---+----------------------+
+| +-----------------+  |   | +-----------------+  |   | +-----------------+  |
+| | **RBAC**        |  |   | | **ABAC**        |  |   | | **Least         |  |
+| |                 |  |   | |                 |  |   | | Privilege**     |  |
+| | Role-Based      |  |   | | Attribute-Based |  |   | |                 |  |
+| | Access Control  |  |   | | Access Control  |  |   | | Principle of    |  |
+| +-----------------+  |   | +-----------------+  |   | | Least Privilege |  |
+|                      |   |                      |   | +-----------------+  |
+| **Definition:**      |   | **Definition:**      |   |                      |
+|                      |   |                      |   | **Definition:**      |
+| Permissions are      |   | Access decisions are |   |                      |
+| assigned to roles,   |   | made by evaluating   |   | Every user, service, |
+| and users are        |   | policies against     |   | or process should    |
+| assigned to roles.   |   | attributes of the    |   | operate with the     |
+| Access decisions are |   | user (role,          |   | minimum permissions  |
+| made by checking the |   | department,          |   | necessary to perform |
+| user\'s current role |   | location), the       |   | its function --- no  |
+| against a permission |   | resource             |   | more. This is not a  |
+| matrix. Roles are    |   | (classification,     |   | control mechanism    |
+| defined by job       |   | owner, region), and  |   | like RBAC or ABAC;   |
+| function --- not by  |   | the environment      |   | it is a design       |
+| individual.          |   | (time of day, IP     |   | principle that       |
+|                      |   | range, MFA status).  |   | informs how          |
+| **When to use:**     |   | More expressive than |   | permissions are      |
+|                      |   | RBAC but more        |   | assigned within      |
+| When users fall into |   | complex to           |   | whichever access     |
+| a small number of    |   | implement.           |   | control model is     |
+| distinct job         |   |                      |   | chosen.              |
+| functions with       |   | **When to use:**     |   |                      |
+| predictable          |   |                      |   | **When to use:**     |
+| permission sets.     |   | When access          |   |                      |
+| Most appropriate for |   | decisions depend on  |   | Always --- as a      |
+| internal systems     |   | context that roles   |   | constraint applied   |
+| where roles map to   |   | alone cannot         |   | on top of RBAC or    |
+| org chart positions  |   | express: \"BBC staff |   | ABAC. When designing |
+| (admin, editor,      |   | can access this      |   | a new role, start    |
+| viewer, auditor).    |   | document, but only   |   | with zero            |
+|                      |   | from a BBC-managed   |   | permissions and add  |
+| **Minimal Flask      |   | device, and only     |   | only what the role   |
+| implementation:**    |   | between 06:00--22:00 |   | demonstrably         |
+|                      |   | UK time.\" Or:       |   | requires. Review     |
+| \# Decorator-based   |   | \"Users can edit     |   | permissions          |
+| RBAC:                |   | their own content,   |   | periodically and     |
+|                      |   | but only content in  |   | remove any that are  |
+| def                  |   | their assigned       |   | no longer used.      |
+| role_required(role): |   | territory.\"         |   | Apply to service     |
+|                      |   |                      |   | accounts and API     |
+| def decorator(f):    |   | **Minimal Flask      |   | keys as well as      |
+|                      |   | implementation:**    |   | human users.         |
+| \@functools.wraps(f) |   |                      |   |                      |
+|                      |   | \# Policy function   |   | **Minimal Flask      |
+| def wrapper(\*args,  |   | --- evaluates        |   | implementation:**    |
+| \*\*kwargs):         |   | multiple attributes: |   |                      |
+|                      |   |                      |   | \# Least-privilege   |
+| user =               |   | def can_access(user, |   | API key scopes:      |
+| get_current_user()   |   | resource,            |   |                      |
+|                      |   | environment):        |   | API_SCOPES = {       |
+| if user.role !=      |   |                      |   |                      |
+| role:                |   | if                   |   | \"read:articles\":   |
+|                      |   | res                  |   | \"Read published     |
+| abort(403)           |   | ource.classification |   | articles only\",     |
+|                      |   | == \"SECRET\":       |   |                      |
+| return f(\*args,     |   |                      |   | \"write:drafts\":    |
+| \*\*kwargs)          |   | if not               |   | \"Create and edit    |
+|                      |   | user.has_clearance:  |   | drafts only\",       |
+| return wrapper       |   |                      |   |                      |
+|                      |   | return False         |   | \                    |
+| return decorator     |   |                      |   | "publish:articles\": |
+|                      |   | if resource.region   |   | \"Move draft →       |
+| \@a                  |   | != user.territory:   |   | published state\",   |
+| pp.route(\"/admin\") |   |                      |   |                      |
+|                      |   | if user.role !=      |   | \"admin:users\":     |
+| \@login_required     |   | \"global_editor\":   |   | \"Manage user        |
+|                      |   |                      |   | accounts\",          |
+| \@role               |   | return False         |   |                      |
+| _required(\"admin\") |   |                      |   | }                    |
+| \# ← role from DB    |   | if                   |   |                      |
+|                      |   | environment.g        |   | \# A journalist gets |
+| def admin_panel():   |   | et(\"mfa_verified\") |   | read + write:drafts  |
+|                      |   | != True:             |   | only.                |
+| \...                 |   |                      |   |                      |
+|                      |   | if                   |   | \# A bot that syncs  |
+|   -----------------  |   | resource.sensitivity |   | headlines gets       |
+|   **BBC scenario:**  |   | == \"high\":         |   | read:articles only.  |
+|   BBC iPlayer        |   |                      |   |                      |
+|   editorial tool:    |   | return False         |   | \# It does NOT get   |
+|   roles include      |   |                      |   | write:drafts or      |
+|   Content Publisher  |   | return True \# all   |   | admin:users          |
+|   (can submit),      |   | attribute checks     |   |                      |
+|   Content Editor     |   | passed               |   | \# even though those |
+|   (can edit),        |   |                      |   | scopes exist.        |
+|   Compliance         |   | \                    |   |                      |
+|   Reviewer (can      |   | @app.route(\"/docume |   | def                  |
+|   approve), Admin    |   | nt/\<int:doc_id\>\") |   | r                    |
+|   (can manage        |   |                      |   | equire_scope(scope): |
+|   users). Each role  |   | \@login_required     |   |                      |
+|   has a fixed        |   |                      |   | def decorator(f):    |
+|   permission set;    |   | def                  |   |                      |
+|   individual users   |   | view_doc(doc_id):    |   | \@functools.wraps(f) |
+|   cannot be granted  |   |                      |   |                      |
+|   ad-hoc             |   | doc =                |   | def wrapper(\*args,  |
+|   exceptions.        |   | get_document(doc_id) |   | \*\*kwargs):         |
+|                      |   |                      |   |                      |
+|   -----------------  |   | env =                |   | if scope not in      |
+|                      |   | {\"mfa_verified\":   |   | c                    |
+|   -----------------  |   | sess                 |   | urrent_token.scopes: |
+|   **⚠ Common         |   | ion.get(\"mfa_ok\")} |   |                      |
+|   mistake:**         |   |                      |   | abort(403)           |
+|   Storing the role   |   | if not               |   |                      |
+|   in the session     |   | can_                 |   | return f(\*args,     |
+|   cookie rather      |   | access(current_user, |   | \*\*kwargs)          |
+|   than the           |   | doc, env):           |   |                      |
+|   database. An       |   |                      |   | return wrapper       |
+|   attacker who can   |   | abort(403)           |   |                      |
+|   modify or forge    |   |                      |   | return decorator     |
+|   the session        |   |   -----------------  |   |                      |
+|   (ShopCo Flaw 5)    |   |   **BBC scenario:**  |   |   -----------------  |
+|   can claim any      |   |   BBC News CMS: a    |   |   **BBC scenario:**  |
+|   role. Role must    |   |   journalist in the  |   |   BBC Connected      |
+|   be re-fetched      |   |   UK Politics team   |   |   Studio API:        |
+|   from the database  |   |   can publish UK     |   |   third-party        |
+|   on every request.  |   |   Politics articles  |   |   developers can     |
+|                      |   |   during their       |   |   request OAuth      |
+|   -----------------  |   |   contracted hours   |   |   scopes for their   |
+|                      |   |   from a BBC IP      |   |   application. A     |
+|                      |   |   range. The same    |   |   podcast            |
+|                      |   |   journalist cannot  |   |   aggregator app     |
+|                      |   |   publish World      |   |   requests           |
+|                      |   |   Service content    |   |   read:episodes      |
+|                      |   |   --- even though    |   |   only. It cannot    |
+|                      |   |   both are           |   |   request            |
+|                      |   |   \"journalist\"     |   |   admin:users or     |
+|                      |   |   roles --- because  |   |   write:content ---  |
+|                      |   |   the resource       |   |   and even if it     |
+|                      |   |   attribute          |   |   did, those scopes  |
+|                      |   |   (region) does not  |   |   would not be       |
+|                      |   |   match the user     |   |   granted to an      |
+|                      |   |   attribute          |   |   external           |
+|                      |   |   (territory).       |   |   developer          |
+|                      |   |                      |   |   application.       |
+|                      |   |   -----------------  |   |                      |
+|                      |   |                      |   |   -----------------  |
+|                      |   |   -----------------  |   |                      |
+|                      |   |   **⚠ Common         |   |                      |
+|                      |   |   mistake:**         |   |  ------------------- |
+|                      |   |   Building ABAC      |   |   **⚠ Common         |
+|                      |   |   logic directly     |   |   mistake:**         |
+|                      |   |   into route         |   |   Over-provisioning  |
+|                      |   |   handlers rather    |   |   \"just in case.\"  |
+|                      |   |   than in a policy   |   |   Service accounts   |
+|                      |   |   engine. When       |   |   given admin        |
+|                      |   |   access rules are   |   |   privileges because |
+|                      |   |   scattered across   |   |   it was easier than |
+|                      |   |   hundreds of        |   |   working out what   |
+|                      |   |   routes, they       |   |                      |
+|                      |   |   become impossible  |   |  they actually need. |
+|                      |   |   to audit.          |   |   API keys with full |
+|                      |   |   Centralise all     |   |   access given to    |
+|                      |   |   policy decisions   |   |   read-only          |
+|                      |   |   in a single        |   |                      |
+|                      |   |   can_access()       |   |  integrations. These |
+|                      |   |   function that is   |   |   become high-value  |
+|                      |   |   unit-tested.       |   |   targets --- a      |
+|                      |   |                      |   |   compromised        |
+|                      |   |   -----------------  |   |   over-privileged    |
+|                      |   |                      |   |   account can do far |
+|                      |   |                      |   |   more damage than a |
+|                      |   |                      |   |   compromised        |
+|                      |   |                      |   |   least-privileged   |
+|                      |   |                      |   |   one.               |
+|                      |   |                      |   |                      |
+|                      |   |                      |   |                      |
+|                      |   |                      |   |  ------------------- |
++----------------------+---+----------------------+---+----------------------+
+
+**Which Pattern to Use --- Decision Guide**
+
++----------------------+----------------------+-----------------------+
+| **Use RBAC           | **Use ABAC           | **Apply Least         |
+| when\...**           | when\...**           | Privilege             |
+|                      |                      | always\...**          |
++----------------------+----------------------+-----------------------+
+| -   Users fall into  | -   Access depends   | -   When designing    |
+|     a small number   |     on context:      |     any new role ---  |
+|     of fixed job     |     time, location,  |     start with zero   |
+|     functions        |     device, MFA      |     permissions       |
+|                      |     status           |                       |
+| -   Permissions are  |                      | -   When creating     |
+|     the same for     | -   The same user    |     service accounts  |
+|     everyone in a    |     needs different  |     or API keys       |
+|     role             |     permissions on   |                       |
+|                      |     different        | -   When granting     |
+| -   The system has a |     resources        |     temporary         |
+|     clear            |                      |     elevated access   |
+|     org-chart-style  | -   You need to      |     --- set an expiry |
+|     hierarchy        |     express rules    |                       |
+|                      |     like \"own       | -   When reviewing    |
+| -   You need simple, |     content only\"   |     existing          |
+|     auditable access |     or \"own region  |     permissions ---   |
+|     rules            |     only\"           |     remove anything   |
+|                      |                      |     unused            |
+| **Start here. Add    | -   You are          |                       |
+| ABAC later if RBAC   |     implementing     | **Least Privilege is  |
+| proves               |     OAuth 2.0 scopes | a constraint applied  |
+| insufficient.**      |     for third-party  | to both RBAC and ABAC |
+|                      |     access           | --- not an            |
+|                      |                      | alternative to        |
+|                      | **More powerful but  | them.**               |
+|                      | requires centralised |                       |
+|                      | policy management.** |                       |
++----------------------+----------------------+-----------------------+
+
+  -----------------------------------------------------------------------
+  **Juice Shop connection:** Juice Shop\'s /administration panel is
+  accessible to any authenticated user --- it has no role check at all.
+  This violates all three patterns simultaneously: RBAC (no role
+  requirement), ABAC (no attribute check), and Least Privilege (all
+  authenticated users implicitly have admin access). Find it by browsing
+  to /#/administration after logging in as any user. Then examine the
+  /api/Users endpoint in ZAP --- it returns all user records to any
+  authenticated caller, with no ownership or role filter.
+
+  -----------------------------------------------------------------------

@@ -1,0 +1,200 @@
++-----------------------------------------------------------------------+
+| **Module 8 --- What the Attacker Left Behind**                        |
+|                                                                       |
+| A09 Logging & Monitoring Failures \| Three-Stage Lab Exercise         |
+|                                                                       |
+| *BBC Academy / JBI Training \| Uses: vulnerable_shop.py,              |
+| vulnerable_shop_fixed.py, OWASP Juice Shop*                           |
++-----------------------------------------------------------------------+
+
+  -----------------------------------------------------------------------
+  **Juice Shop connection:** this exercise uses the ShopCo Flask app from
+  Module 4 to demonstrate the A09 failure mode --- then maps what you
+  observe directly to vulnerabilities you have already found in Juice
+  Shop\'s own incomplete logging.
+
+  -----------------------------------------------------------------------
+
++-----------------------------------------------------------------------+
+| **Stage 1: Attack with No Logging**                                   |
+|                                                                       |
+| *Run SQLi against the unlogged app --- then try to reconstruct what   |
+| happened from the output*                                             |
++-----------------------------------------------------------------------+
+
+  --------------------------------- -------------------------------------
+  **What to Do**                    **What You Should Observe**
+
+  --------------------------------- -------------------------------------
+
++--------------------------------+-------------------------------------+
+| **1a. Start the vulnerable     | **In the terminal you should see:** |
+| ShopCo app**                   |                                     |
+|                                | 127.0.0.1 - - \[date\] \"POST       |
+| cd                             | /login HTTP/1.1\" 302 -             |
+| \~/vuln                        |                                     |
+| _flask_app/module4_owasp_bingo | 127.0.0.1 - - \[date\] \"POST       |
+|                                | /login HTTP/1.1\" 302 -             |
+| python3 vulnerable_shop.py     |                                     |
+|                                | 127.0.0.1 - - \[date\] \"POST       |
+| **1b. Open a second terminal   | /login HTTP/1.1\" 302 -             |
+| --- watch the log output**     |                                     |
+|                                | **Now answer these questions from   |
+| \# This is all Flask prints by | the log alone:**                    |
+| default:                       |                                     |
+|                                | -   **Who was targeted?** → Cannot  |
+| \# 127.0.0.1 - - \[timestamp\] |     tell                            |
+| \"POST /login HTTP/1.1\" 200   |                                     |
+|                                | -   **What payload was used?** →    |
+| **1c. Run the SQL injection    |     Cannot tell                     |
+| login bypass in Firefox**      |                                     |
+|                                | -   **Did authentication succeed?** |
+| Username: admin\' \--          |     → Cannot tell                   |
+|                                |                                     |
+| Password: anything             | -   **How many attempts were        |
+|                                |     made?** → Cannot tell           |
+| → Click Login                  |                                     |
+|                                | -   **Where did the attack come     |
+| **1d. Now run it 10 more times |     from?** → Only IP (no context)  |
+| in quick succession**          |                                     |
+|                                | **This is A09 Logging & Monitoring  |
+| Repeat the SQLi login bypass   | Failure.**                          |
+| 10 times. Watch the terminal.  |                                     |
+|                                | An attack just succeeded. Your logs |
+|                                | are empty of any useful forensic    |
+|                                | information. A SOC analyst          |
+|                                | reviewing these logs would see      |
+|                                | nothing unusual.                    |
++--------------------------------+-------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Stage 2: Enable Structured Logging --- Repeat the Attack**          |
+|                                                                       |
+| *The same attack --- different outcome for the defender*              |
++-----------------------------------------------------------------------+
+
+  --------------------------------- -------------------------------------
+  **What to Do**                    **What You Should Observe**
+
+  --------------------------------- -------------------------------------
+
++--------------------------------+-------------------------------------+
+| **2a. Stop the vulnerable app  | **You should now see structured     |
+| (Ctrl+C)**                     | JSON security events:**             |
+|                                |                                     |
+| **2b. Start the fixed app with | {\"ti                               |
+| structured logging**           | mestamp\":\"2026-03-17T09:43:12Z\", |
+|                                |                                     |
+| python3                        | \"event\":\"LOGIN_FAILURE\",        |
+| vulnerable_shop_fixed.py       |                                     |
+|                                | \"username\":\"admin\",             |
+| *(Port 5001 --- the Module 11  |                                     |
+| Flask Supplement logging code  | \"source_ip\":\"127.0.0.1\",        |
+| is already integrated in this  |                                     |
+| version)*                      | \"success\":false,                  |
+|                                |                                     |
+| **2c. Repeat the SQLi attempt  | \"detail\":\"invalid_credentials\"} |
+| --- same payload**             |                                     |
+|                                | **Now answer the same questions:**  |
+| Username: admin\' \--          |                                     |
+|                                | -   **Who was targeted?** →         |
+| Password: anything             |     \"admin\"                       |
+|                                |                                     |
+| → Click Login (expect:         | -   **What payload was used?** →    |
+| Forbidden)                     |     Visible in event detail         |
+|                                |                                     |
+| **2d. Repeat 10 times --- then | -   **Did auth succeed?** →         |
+| try a valid login**            |     \"success\": false              |
+|                                |                                     |
+| Username: alice Password:      | -   **How many attempts?** → Count  |
+| password123                    |     LOGIN_FAILURE events            |
+|                                |                                     |
+| Watch the terminal output      | -   **Source?** → \"source_ip\" on  |
+| carefully.                     |     every event                     |
+|                                |                                     |
+|                                | **The attack is now detectable,     |
+|                                | attributable, and countable.**      |
+|                                |                                     |
+|                                | A SIEM rule alerting on 5+          |
+|                                | LOGIN_FAILURE events in 60 seconds  |
+|                                | from the same IP would have         |
+|                                | triggered an alert after the third  |
+|                                | attempt.                            |
++--------------------------------+-------------------------------------+
+
++-----------------------------------------------------------------------+
+| **Stage 3: Forensic Questions --- What a Good Log Enables**           |
+|                                                                       |
+| *Five questions a SOC analyst must be able to answer from log data    |
+| alone*                                                                |
++-----------------------------------------------------------------------+
+
+  ---------------------------------------------------------------------------------------
+          **Forensic Question**   **Which Log Field Answers     **Why It Matters for BBC
+                                  It**                          Incident Response**
+  ------- ----------------------- ----------------------------- -------------------------
+  **1**   **When exactly did the  \"timestamp\" on first and    Determines the breach
+          attack begin and end?** last LOGIN_FAILURE events     window --- which user
+                                                                actions during that
+                                                                period need review.
+                                                                Required for ICO 72-hour
+                                                                breach notification
+                                                                timing.
+
+  **2**   **Which account(s) were \"username\" field on every   Identifies whether a
+          targeted?**             authentication event          specific high-privilege
+                                                                account was targeted
+                                                                (e.g. admin, service
+                                                                accounts) vs. a broad
+                                                                credential-stuffing
+                                                                attack.
+
+  **3**   **Did any attempt       \"success\": true in a        Determines whether a data
+          succeed?**              LOGIN_SUCCESS event following breach occurred. A
+                                  failures                      successful login after 50
+                                                                failures is an almost
+                                                                certain indicator of
+                                                                compromise.
+
+  **4**   **How many attempts     COUNT of events where         Distinguishes a targeted
+          were made?**            \"event\"=\"LOGIN_FAILURE\"   manual attack (5--20
+                                  and \"source_ip\" matches     attempts) from automated
+                                                                credential stuffing
+                                                                (thousands). Informs the
+                                                                response priority.
+
+  **5**   **Is this the same      \"source_ip\"                 A known-bad IP appearing
+          attacker as a previous  cross-referenced against      in logs confirms
+          incident?**             threat intelligence feeds     attribution and may
+                                                                indicate a persistent
+                                                                threat actor rather than
+                                                                an opportunistic scan.
+  ---------------------------------------------------------------------------------------
+
++-----------------------------------------------------------------------+
+| **Now apply this to Juice Shop:**                                     |
+|                                                                       |
+| -   In Juice Shop, find the \"Access Log\" challenge --- it           |
+|     demonstrates what Juice Shop does and does not log.               |
+|                                                                       |
+| -   Use ZAP to run 20 failed login attempts against Juice Shop\'s     |
+|     /rest/user/login endpoint. Check whether Juice Shop surfaces any  |
+|     alerting in its UI or admin panel.                                |
+|                                                                       |
+| -   Compare: what does Juice Shop log vs. what the Module 11 Flask    |
+|     structured logging produces? Which gives a SOC analyst more to    |
+|     work with?                                                        |
+|                                                                       |
+| -   Juice Shop\'s \"Forged Feedback\" and \"Five-Star Feedback\"      |
+|     challenges both leave no server-side audit trail. What event      |
+|     types are missing from Juice Shop\'s log model?                   |
++-----------------------------------------------------------------------+
+
+  -----------------------------------------------------------------------
+  **The A09 test:** after an incident, can you answer --- who was
+  attacked, when, from where, how many times, and did it succeed ---
+  using only your log files? **If the answer to any of those five
+  questions is \"cannot tell,\" you have an A09 failure.** The fix is not
+  a SIEM. The fix is structured security events at the application layer.
+
+  -----------------------------------------------------------------------

@@ -1,0 +1,22 @@
+# requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+# SHOPCO SECURITY LAB — PRODUCTION / FIXED APP DEPENDENCIES
+# BBC Academy / JBI Training  |  Secure Web Application Development
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# PURPOSE:
+#   Current, pinned dependencies for running vulnerable_shop_fixed.py.
+#   Demonstrates a secure, hash-pinned requirements file as a contrast to
+#   requirements_vulnerable.txt used in the Module 5 pip-audit exercise.
+#
+# INSTALL:
+#   pip3 install -r requirements.txt --break-system-packages
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+Flask==3.1.1
+Werkzeug==3.1.3
+Jinja2==3.1.4
+itsdangerous==2.2.0
+requests==2.32.3
+cryptography==43.0.3
